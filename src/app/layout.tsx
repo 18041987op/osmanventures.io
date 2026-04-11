@@ -1,0 +1,46 @@
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  title: "Osman | Full-Stack Developer & Business Owner",
+  description:
+    "Full-stack developer and business owner from Charlotte, NC. Built AutoRx Center's complete tech ecosystem. Specializing in React, Next.js, Node.js, and AI integration.",
+  keywords: [
+    "developer",
+    "full-stack",
+    "Next.js",
+    "React",
+    "TypeScript",
+    "Supabase",
+  ],
+  authors: [{ name: "Osman", url: "https://github.com/18041987op" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://osmanventures.io",
+    title: "Osman | Full-Stack Developer & Business Owner",
+    description:
+      "Full-stack developer and business owner from Charlotte, NC. Built AutoRx Center's complete tech ecosystem.",
+    siteName: "Osman Ventures",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Osman | Full-Stack Developer & Business Owner",
+    description:
+      "Full-stack developer and business owner from Charlotte, NC. Built AutoRx Center's complete tech ecosystem.",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className="h-full">
+      <body className="h-full antialiased bg-white text-slate-900">
+        {children}
+      </body>
+    </html>
+  );
+}
