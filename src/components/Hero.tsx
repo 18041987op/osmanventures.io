@@ -86,20 +86,6 @@ export default function Hero() {
             Charlotte, NC.
           </motion.p>
 
-          {/* Stats */}
-          <motion.div variants={itemVariants} className="flex flex-wrap gap-8 pt-2">
-            {[
-              { number: "4+", label: "Production Apps" },
-              { number: "5K+", label: "Lines of Code" },
-              { number: "3", label: "AI Integrations" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-2xl font-bold gradient-text">{stat.number}</div>
-                <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
-
           {/* CTA Buttons */}
           <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 pt-4">
             <a

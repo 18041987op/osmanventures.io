@@ -36,7 +36,7 @@ export default function Navbar() {
             href="#top"
             className="text-xl font-bold gradient-text hover:opacity-80 transition-opacity"
           >
-            OV
+            OP
           </a>
 
           {/* Desktop Links */}

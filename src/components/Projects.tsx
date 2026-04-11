@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { ExternalLink, Layers, GraduationCap, Bot } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 interface Project {
   title: string;
@@ -10,9 +10,8 @@ interface Project {
   tech: string[];
   url: string;
   features: string[];
-  icon: React.ReactNode;
+  image: string;
   gradient: string;
-  accentColor: string;
 }
 
 const projects: Project[] = [
@@ -30,9 +29,8 @@ const projects: Project[] = [
       "Vendor bills management",
       "QuickBooks integration",
     ],
-    icon: <Layers className="w-8 h-8" />,
-    gradient: "from-blue-600 via-indigo-600 to-violet-600",
-    accentColor: "blue",
+    image: "/images/management.jpg",
+    gradient: "from-blue-600/20 to-indigo-600/20",
   },
   {
     title: "AutoRx Training Platform",
@@ -48,12 +46,11 @@ const projects: Project[] = [
       "HR self-service portal",
       "Bilingual interface (EN/ES)",
     ],
-    icon: <GraduationCap className="w-8 h-8" />,
-    gradient: "from-purple-600 via-pink-600 to-rose-600",
-    accentColor: "purple",
+    image: "/images/training.jpg",
+    gradient: "from-purple-600/20 to-pink-600/20",
   },
   {
-    title: "Emma AI — Business Assistant",
+    title: "Emma AI \u2014 Business Assistant",
     description:
       "Intelligent AI assistant that learns business patterns and helps with financial management, bill tracking, and strategic insights.",
     tech: ["Next.js", "Prisma", "OpenAI/Claude", "QuickBooks API"],
@@ -66,9 +63,8 @@ const projects: Project[] = [
       "Voice command support",
       "Memory system that learns",
     ],
-    icon: <Bot className="w-8 h-8" />,
-    gradient: "from-emerald-600 via-cyan-600 to-blue-600",
-    accentColor: "emerald",
+    image: "/images/emma.jpg",
+    gradient: "from-emerald-600/20 to-cyan-600/20",
   },
 ];
 
@@ -127,26 +123,30 @@ export default function Projects() {
               className="group glass rounded-2xl overflow-hidden hover-glow"
             >
               <div className="grid lg:grid-cols-5 gap-0">
-                {/* Visual Side */}
-                <div className={`lg:col-span-2 bg-gradient-to-br ${project.gradient} p-8 lg:p-10 flex flex-col justify-between min-h-[280px] relative overflow-hidden`}>
-                  {/* Pattern overlay */}
-                  <div className="absolute inset-0 bg-grid opacity-20" />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors duration-500" />
+                {/* Screenshot Side */}
+                <div className={`lg:col-span-2 relative min-h-[280px] overflow-hidden bg-gradient-to-br ${project.gradient}`}>
+                  {/* App screenshot */}
+                  <img
+                    src={project.image}
+                    alt={`${project.title} screenshot`}
+                    className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
+                  />
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
 
-                  <div className="relative z-10">
-                    <div className="text-white/80 mb-4">{project.icon}</div>
-                    <h3 className="text-2xl font-bold text-white">{project.title}</h3>
+                  {/* Title + link overlay */}
+                  <div className="absolute inset-0 flex flex-col justify-between p-8 lg:p-10 z-10">
+                    <h3 className="text-2xl font-bold text-white drop-shadow-lg">{project.title}</h3>
+                    <a
+                      href={project.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium group/link transition-colors"
+                    >
+                      View Live
+                      <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                    </a>
                   </div>
-
-                  <a
-                    href={project.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="relative z-10 inline-flex items-center gap-2 text-white/80 hover:text-white text-sm font-medium group/link transition-colors"
-                  >
-                    View Live
-                    <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                  </a>
                 </div>
 
                 {/* Content Side */}
