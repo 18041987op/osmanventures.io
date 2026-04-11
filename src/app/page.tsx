@@ -9,14 +9,19 @@ import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white text-slate-900">
+    <div className="min-h-screen bg-[#0a0a0f] text-slate-200">
       <Navbar />
       <main>
         <Hero />
+        <div className="section-divider" />
         <About />
+        <div className="section-divider" />
         <Projects />
+        <div className="section-divider" />
         <Skills />
+        <div className="section-divider" />
         <Experience />
+        <div className="section-divider" />
         <Contact />
       </main>
       <Footer />

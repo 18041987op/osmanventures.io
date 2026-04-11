@@ -2,98 +2,98 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import {
-  Code2,
-  Database,
-  Brain,
-  Wrench,
-  Box,
-  Terminal,
-} from "lucide-react";
+import { Code2, Database, Brain, Wrench, Terminal, Globe } from "lucide-react";
 
 interface SkillCategory {
   name: string;
   icon: React.ReactNode;
   skills: string[];
+  color: string;
 }
 
 const skillCategories: SkillCategory[] = [
   {
     name: "Frontend",
-    icon: <Code2 className="w-6 h-6" />,
+    icon: <Code2 className="w-5 h-5" />,
     skills: ["React", "Next.js 15", "TypeScript", "Tailwind CSS", "Framer Motion"],
+    color: "from-blue-500 to-cyan-500",
   },
   {
     name: "Backend",
-    icon: <Terminal className="w-6 h-6" />,
-    skills: ["Node.js", "Express.js", "Prisma", "Supabase", "PostgreSQL"],
+    icon: <Terminal className="w-5 h-5" />,
+    skills: ["Node.js", "Express.js", "Prisma", "REST APIs", "PostgreSQL"],
+    color: "from-emerald-500 to-teal-500",
   },
   {
-    name: "Databases & APIs",
-    icon: <Database className="w-6 h-6" />,
-    skills: ["Supabase", "PostgreSQL", "QuickBooks API", "RESTful APIs"],
+    name: "Databases",
+    icon: <Database className="w-5 h-5" />,
+    skills: ["Supabase", "PostgreSQL", "Prisma ORM", "Database Design"],
+    color: "from-violet-500 to-purple-500",
   },
   {
-    name: "AI & Integrations",
-    icon: <Brain className="w-6 h-6" />,
-    skills: ["OpenAI API", "Claude API", "i18n (Internationalization)"],
+    name: "AI & APIs",
+    icon: <Brain className="w-5 h-5" />,
+    skills: ["OpenAI API", "Claude API", "QuickBooks API", "i18n"],
+    color: "from-orange-500 to-rose-500",
   },
   {
-    name: "Development Tools",
-    icon: <Wrench className="w-6 h-6" />,
-    skills: ["Git/GitHub", "Vercel", "VS Code", "npm/yarn", "ESLint"],
+    name: "DevOps",
+    icon: <Wrench className="w-5 h-5" />,
+    skills: ["Git/GitHub", "Vercel", "CI/CD", "npm", "ESLint"],
+    color: "from-indigo-500 to-blue-500",
   },
   {
     name: "Other",
-    icon: <Box className="w-6 h-6" />,
-    skills: ["Web Push Notifications", "OAuth/SSO", "Email Systems", "Web Scraping"],
+    icon: <Globe className="w-5 h-5" />,
+    skills: ["Web Push", "OAuth/SSO", "Email Systems", "Web Scraping"],
+    color: "from-pink-500 to-rose-500",
   },
 ];
 
 export default function Skills() {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isInView = useInView(ref, { once: true, margin: "-50px" });
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 },
-    },
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.5 } },
   };
 
   return (
     <section
       id="skills"
       ref={ref}
-      className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50"
+      className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden"
     >
-      <div className="max-w-6xl mx-auto">
-        <motion.h2
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0f0f1a] to-[#0a0a0f]" />
+      <div className="glow-orb w-72 h-72 bg-indigo-600 top-1/3 -right-36 pulse-glow" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 max-w-6xl mx-auto">
+        {/* Header */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6 }}
-          className="text-4xl sm:text-5xl font-bold text-slate-900 mb-16"
+          className="mb-16 space-y-4"
         >
-          Skills & Technologies
-        </motion.h2>
+          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">// Skills</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white">
+            Tech{" "}
+            <span className="gradient-text">Stack</span>
+          </h2>
+        </motion.div>
 
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={containerVariants}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+          className="grid md:grid-cols-2 lg:grid-cols-3 gap-5"
         >
           {skillCategories.map((category) => (
             <motion.div
@@ -101,27 +101,27 @@ export default function Skills() {
               variants={itemVariants}
               className="group"
             >
-              <div className="bg-white rounded-xl p-6 h-full border border-slate-200 hover:border-indigo-200 hover:shadow-lg transition-all duration-300">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="text-indigo-600 group-hover:text-indigo-700 transition-colors">
+              <div className="glass rounded-xl p-6 h-full hover-glow relative overflow-hidden">
+                {/* Gradient accent top bar */}
+                <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r ${category.color} opacity-50 group-hover:opacity-100 transition-opacity`} />
+
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="text-indigo-400 group-hover:text-indigo-300 transition-colors">
                     {category.icon}
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    {category.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold text-white">{category.name}</h3>
                 </div>
 
-                <ul className="space-y-2">
+                <div className="flex flex-wrap gap-2">
                   {category.skills.map((skill) => (
-                    <li
+                    <span
                       key={skill}
-                      className="text-sm text-slate-600 flex items-center gap-2"
+                      className="px-3 py-1.5 text-xs font-medium text-slate-300 bg-white/5 border border-white/10 rounded-lg group-hover:border-indigo-500/30 transition-colors"
                     >
-                      <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
                       {skill}
-                    </li>
+                    </span>
                   ))}
-                </ul>
+                </div>
               </div>
             </motion.div>
           ))}

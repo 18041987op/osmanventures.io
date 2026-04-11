@@ -8,10 +8,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -26,9 +23,9 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      className={`fixed top-0 w-full z-50 transition-all duration-500 ${
         isScrolled
-          ? "bg-white border-b border-gray-200 shadow-sm"
+          ? "glass-strong shadow-lg shadow-black/20"
           : "bg-transparent"
       }`}
     >
@@ -37,9 +34,9 @@ export default function Navbar() {
           {/* Logo */}
           <a
             href="#top"
-            className="text-xl font-semibold text-slate-900 hover:text-indigo-600 transition-colors"
+            className="text-xl font-bold gradient-text hover:opacity-80 transition-opacity"
           >
-            O
+            OV
           </a>
 
           {/* Desktop Links */}
@@ -48,36 +45,37 @@ export default function Navbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="text-sm text-slate-600 hover:text-indigo-600 transition-colors"
+                className="text-sm text-slate-400 hover:text-white transition-colors duration-300 relative group"
               >
                 {link.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-px bg-indigo-500 group-hover:w-full transition-all duration-300" />
               </a>
             ))}
           </div>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden"
+            className="md:hidden text-slate-400 hover:text-white transition-colors"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-slate-900" />
+              <X className="w-6 h-6" />
             ) : (
-              <Menu className="w-6 h-6 text-slate-900" />
+              <Menu className="w-6 h-6" />
             )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 bg-white">
-            <div className="flex flex-col gap-4 px-4 py-4">
+          <div className="md:hidden glass-strong rounded-b-xl">
+            <div className="flex flex-col gap-4 px-4 py-6">
               {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}
-                  className="text-slate-600 hover:text-indigo-600 transition-colors"
+                  className="text-slate-300 hover:text-white hover:pl-2 transition-all duration-300"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {link.label}

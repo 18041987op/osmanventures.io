@@ -2,35 +2,28 @@
 
 import { useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, Send, GitBranch } from "lucide-react";
 
 export default function Contact() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
-  const [formStatus, setFormStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
+  const [formStatus, setFormStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormStatus("loading");
-
     const formData = new FormData(e.currentTarget);
     const data = {
       name: formData.get("name"),
       email: formData.get("email"),
       message: formData.get("message"),
     };
-
     try {
       const response = await fetch("https://formspree.io/f/xyzaqnnq", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-
       if (response.ok) {
         setFormStatus("success");
         e.currentTarget.reset();
@@ -45,101 +38,86 @@ export default function Contact() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6 },
-    },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
   };
 
   return (
     <section
       id="contact"
       ref={ref}
-      className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-50"
+      className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden"
     >
-      <div className="max-w-4xl mx-auto">
-        <motion.h2
+      {/* Background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0f0f1a] to-[#0a0a0f]" />
+      <div className="absolute inset-0 bg-grid opacity-30" />
+      <div className="glow-orb w-96 h-96 bg-indigo-600 bottom-0 left-1/2 -translate-x-1/2 pulse-glow" style={{ opacity: 0.15 }} />
+
+      <div className="relative z-10 max-w-4xl mx-auto">
+        {/* Header */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           transition={{ duration: 0.6 }}
-          className="text-4xl sm:text-5xl font-bold text-slate-900 mb-16 text-center"
+          className="text-center mb-16 space-y-4"
         >
-          Let's Work Together
-        </motion.h2>
+          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">// Contact</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-white">
+            Let&apos;s{" "}
+            <span className="gradient-text">Connect</span>
+          </h2>
+          <p className="text-slate-500 max-w-lg mx-auto">
+            Have a project in mind or want to discuss an opportunity? I&apos;d love to hear from you.
+          </p>
+        </motion.div>
 
         <motion.div
           initial="hidden"
           animate={isInView ? "visible" : "hidden"}
           variants={containerVariants}
-          className="grid md:grid-cols-2 gap-12"
+          className="grid md:grid-cols-5 gap-8"
         >
           {/* Contact Info */}
-          <motion.div variants={itemVariants} className="space-y-8">
-            <div className="space-y-2">
-              <h3 className="text-xl font-semibold text-slate-900">
-                Get in Touch
-              </h3>
-              <p className="text-slate-600">
-                Have a project in mind? Want to discuss an opportunity? I'd love
-                to hear from you.
-              </p>
-            </div>
+          <motion.div variants={itemVariants} className="md:col-span-2 space-y-6">
+            <a
+              href="mailto:autorxcenter@gmail.com"
+              className="glass rounded-xl p-5 flex items-center gap-4 group hover-glow block"
+            >
+              <div className="w-10 h-10 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600/30 transition-colors">
+                <Mail className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Email</p>
+                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">autorxcenter@gmail.com</p>
+              </div>
+            </a>
 
-            <div className="space-y-4">
-              {/* Email */}
-              <a
-                href="mailto:autorxcenter@gmail.com"
-                className="flex items-start gap-4 group"
-              >
-                <div className="mt-1">
-                  <Mail className="w-5 h-5 text-indigo-600 group-hover:text-indigo-700 transition-colors" />
-                </div>
-                <div>
-                  <p className="font-medium text-slate-900">Email</p>
-                  <p className="text-slate-600 group-hover:text-indigo-600 transition-colors">
-                    autorxcenter@gmail.com
-                  </p>
-                </div>
-              </a>
+            <a
+              href="https://github.com/18041987op"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass rounded-xl p-5 flex items-center gap-4 group hover-glow block"
+            >
+              <div className="w-10 h-10 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600/30 transition-colors">
+                <GitBranch className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">GitHub</p>
+                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">18041987op</p>
+              </div>
+            </a>
 
-              {/* GitHub */}
-              <a
-                href="https://github.com/18041987op"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-4 group"
-              >
-                <div className="mt-1 text-indigo-600 group-hover:text-indigo-700 transition-colors">
-                  →
-                </div>
-                <div>
-                  <p className="font-medium text-slate-900">GitHub</p>
-                  <p className="text-slate-600 group-hover:text-indigo-600 transition-colors">
-                    github.com/18041987op
-                  </p>
-                </div>
-              </a>
-
-              {/* Location */}
-              <div className="flex items-start gap-4">
-                <div className="mt-1">
-                  <MapPin className="w-5 h-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-slate-900">Location</p>
-                  <p className="text-slate-600">Charlotte, NC</p>
-                </div>
+            <div className="glass rounded-xl p-5 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">Location</p>
+                <p className="text-white text-sm">Charlotte, NC</p>
               </div>
             </div>
           </motion.div>
@@ -148,10 +126,10 @@ export default function Contact() {
           <motion.form
             variants={itemVariants}
             onSubmit={handleSubmit}
-            className="space-y-4"
+            className="md:col-span-3 glass rounded-xl p-6 sm:p-8 space-y-5"
           >
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-900 mb-2">
+              <label htmlFor="name" className="block text-sm text-slate-400 mb-2">
                 Name
               </label>
               <input
@@ -159,13 +137,13 @@ export default function Contact() {
                 id="name"
                 name="name"
                 required
-                className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                 placeholder="Your name"
               />
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-900 mb-2">
+              <label htmlFor="email" className="block text-sm text-slate-400 mb-2">
                 Email
               </label>
               <input
@@ -173,13 +151,13 @@ export default function Contact() {
                 id="email"
                 name="email"
                 required
-                className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
                 placeholder="your@email.com"
               />
             </div>
 
             <div>
-              <label htmlFor="message" className="block text-sm font-medium text-slate-900 mb-2">
+              <label htmlFor="message" className="block text-sm text-slate-400 mb-2">
                 Message
               </label>
               <textarea
@@ -187,7 +165,7 @@ export default function Contact() {
                 name="message"
                 required
                 rows={4}
-                className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"
                 placeholder="Tell me about your project..."
               />
             </div>
@@ -195,20 +173,25 @@ export default function Contact() {
             <button
               type="submit"
               disabled={formStatus === "loading"}
-              className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-500 hover:shadow-lg hover:shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
             >
-              {formStatus === "loading"
-                ? "Sending..."
-                : formStatus === "success"
-                  ? "Message sent!"
-                  : formStatus === "error"
-                    ? "Error sending message"
-                    : "Send Message"}
+              {formStatus === "loading" ? (
+                "Sending..."
+              ) : formStatus === "success" ? (
+                "Message sent!"
+              ) : formStatus === "error" ? (
+                "Error — try again"
+              ) : (
+                <>
+                  Send Message
+                  <Send className="w-4 h-4" />
+                </>
+              )}
             </button>
 
             {formStatus === "success" && (
-              <p className="text-sm text-green-600 text-center">
-                Thanks for reaching out! I'll get back to you soon.
+              <p className="text-sm text-emerald-400 text-center">
+                Thanks for reaching out! I&apos;ll get back to you soon.
               </p>
             )}
           </motion.form>

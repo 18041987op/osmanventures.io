@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     "React",
     "TypeScript",
     "Supabase",
+    "portfolio",
   ],
   authors: [{ name: "Osman", url: "https://github.com/18041987op" }],
   openGraph: {
@@ -38,9 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="h-full antialiased bg-white text-slate-900">
-        {children}
-      </body>
+      <body className="h-full antialiased">{children}</body>
     </html>
   );
 }
