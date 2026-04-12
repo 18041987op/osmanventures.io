@@ -66,6 +66,23 @@ const projects: Project[] = [
     image: "/images/emma.jpg",
     gradient: "from-emerald-600/20 to-cyan-600/20",
   },
+  {
+    title: "Control de Gastos",
+    description:
+      "Expense tracking dashboard for monitoring business spending with budget management, category breakdowns, monthly history, and CSV import.",
+    tech: ["JavaScript", "HTML/CSS", "Chart.js", "Vercel"],
+    url: "https://control-gastos-ivory.vercel.app",
+    features: [
+      "Budget tracking with alerts",
+      "Category-based spending charts",
+      "Monthly expense history",
+      "CSV data import",
+      "Over-budget notifications",
+      "Repeating task management",
+    ],
+    image: "/images/gastos.jpg",
+    gradient: "from-violet-600/20 to-amber-600/20",
+  },
 ];
 
 export default function Projects() {
