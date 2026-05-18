@@ -33,6 +33,12 @@ export default function Footer() {
               Projects
             </a>
             <a
+              href="#services"
+              className="text-sm text-slate-500 hover:text-white transition-colors"
+            >
+              Services
+            </a>
+            <a
               href="#contact"
               className="text-sm text-slate-500 hover:text-white transition-colors"
             >
