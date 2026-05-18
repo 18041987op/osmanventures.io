@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Sparkles } from "lucide-react";
 
 interface Project {
   title: string;
@@ -10,11 +10,31 @@ interface Project {
   tech: string[];
   url: string;
   features: string[];
-  image: string;
+  image?: string;
   gradient: string;
+  badge?: string;
+  isOwnProduct?: boolean;
 }
 
 const projects: Project[] = [
+  {
+    title: "RunTech — Auto Shop Management SaaS",
+    description:
+      "All-in-one SaaS platform built for independent auto repair shops. Currently in pilot at AutoRx Center in Charlotte, NC. Solving real operational problems from the inside out.",
+    tech: ["Next.js", "Supabase", "TypeScript", "AI Integration"],
+    url: "https://runtech.run",
+    features: [
+      "Shop operations dashboard",
+      "Payroll & technician management",
+      "Customer & vehicle tracking",
+      "QuickBooks integration",
+      "AI-powered insights",
+      "Multi-location ready",
+    ],
+    gradient: "from-indigo-600/30 to-fuchsia-600/30",
+    badge: "Pilot Program",
+    isOwnProduct: true,
+  },
   {
     title: "AutoRx Management Portal",
     description:
@@ -143,17 +163,36 @@ export default function Projects() {
                 {/* Screenshot Side */}
                 <div className={`lg:col-span-2 relative min-h-[280px] overflow-hidden bg-gradient-to-br ${project.gradient}`}>
                   {/* App screenshot */}
-                  <img
-                    src={project.image}
-                    alt={`${project.title} screenshot`}
-                    className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
-                  />
+                  {project.image && (
+                    <img
+                      src={project.image}
+                      alt={`${project.title} screenshot`}
+                      className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
+                    />
+                  )}
                   {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-500" />
+                  <div className={`absolute inset-0 ${project.image ? "bg-black/40 group-hover:bg-black/20" : "bg-black/20 group-hover:bg-black/10"} transition-colors duration-500`} />
+
+                  {/* Badges (top-right) */}
+                  {(project.badge || project.isOwnProduct) && (
+                    <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+                      {project.isOwnProduct && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-fuchsia-200 bg-fuchsia-500/20 border border-fuchsia-400/40 rounded-full backdrop-blur-sm">
+                          <Sparkles className="w-3 h-3" />
+                          Own SaaS
+                        </span>
+                      )}
+                      {project.badge && (
+                        <span className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-200 bg-emerald-500/20 border border-emerald-400/40 rounded-full backdrop-blur-sm">
+                          {project.badge}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Title + link overlay */}
                   <div className="absolute inset-0 flex flex-col justify-between p-8 lg:p-10 z-10">
-                    <h3 className="text-2xl font-bold text-white drop-shadow-lg">{project.title}</h3>
+                    <h3 className="text-2xl font-bold text-white drop-shadow-lg pr-24">{project.title}</h3>
                     <a
                       href={project.url}
                       target="_blank"
