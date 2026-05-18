@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
 import Projects from "@/components/Projects";
+import Services from "@/components/Services";
 import Skills from "@/components/Skills";
 import Experience from "@/components/Experience";
 import Contact from "@/components/Contact";
@@ -17,6 +18,8 @@ export default function Home() {
         <About />
         <div className="section-divider" />
         <Projects />
+        <div className="section-divider" />
+        <Services />
         <div className="section-divider" />
         <Skills />
         <div className="section-divider" />

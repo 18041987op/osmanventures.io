@@ -51,7 +51,7 @@ export default function Footer() {
               <GitBranch className="w-4 h-4" />
             </a>
             <a
-              href="mailto:autorxcenter@gmail.com"
+              href="mailto:osman@osmanventures.io"
               className="text-slate-500 hover:text-white transition-colors"
               aria-label="Email"
             >

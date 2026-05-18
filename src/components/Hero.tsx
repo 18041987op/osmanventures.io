@@ -80,10 +80,9 @@ export default function Hero() {
             variants={itemVariants}
             className="text-lg text-slate-500 max-w-2xl leading-relaxed"
           >
-            I build modern web applications and business systems from the ground
-            up. Self-taught developer with hands-on experience building a
-            complete tech ecosystem for my independent auto repair shop in
-            Charlotte, NC.
+            I build modern web applications for businesses that need real
+            solutions — not just pretty interfaces.{" "}
+            <span className="text-slate-300">Available for custom projects.</span>
           </motion.p>
 
           {/* CTA Buttons */}

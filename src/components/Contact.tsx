@@ -84,7 +84,7 @@ export default function Contact() {
           {/* Contact Info */}
           <motion.div variants={itemVariants} className="md:col-span-2 space-y-6">
             <a
-              href="mailto:autorxcenter@gmail.com"
+              href="mailto:osman@osmanventures.io"
               className="glass rounded-xl p-5 flex items-center gap-4 group hover-glow block"
             >
               <div className="w-10 h-10 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600/30 transition-colors">
@@ -92,7 +92,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-sm text-slate-500">Email</p>
-                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">autorxcenter@gmail.com</p>
+                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">osman@osmanventures.io</p>
               </div>
             </a>
 
