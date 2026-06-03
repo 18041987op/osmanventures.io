@@ -1,6 +1,7 @@
 "use client";
 
 import { GitBranch, Mail } from "lucide-react";
+import { siteConfig } from "@/lib/site";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -13,9 +14,9 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold gradient-text">OP</span>
+            <span className="text-xl font-bold gradient-text">{siteConfig.initials}</span>
             <span className="text-sm text-slate-600">|</span>
-            <span className="text-sm text-slate-500">osmanventures.io</span>
+            <span className="text-sm text-slate-500">{siteConfig.domain}</span>
           </div>
 
           {/* Links */}
@@ -48,7 +49,7 @@ export default function Footer() {
             <span className="text-slate-800">|</span>
 
             <a
-              href="https://github.com/18041987op"
+              href={siteConfig.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-slate-500 hover:text-white transition-colors"
@@ -57,7 +58,7 @@ export default function Footer() {
               <GitBranch className="w-4 h-4" />
             </a>
             <a
-              href="mailto:osman@osmanventures.io"
+              href={`mailto:${siteConfig.email}`}
               className="text-slate-500 hover:text-white transition-colors"
               aria-label="Email"
             >

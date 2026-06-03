@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { motion, useInView } from "framer-motion";
 import { Mail, MapPin, Send, GitBranch } from "lucide-react";
+import { siteConfig } from "@/lib/site";
 
 export default function Contact() {
   const ref = useRef(null);
@@ -92,7 +93,7 @@ export default function Contact() {
           {/* Contact Info */}
           <motion.div variants={itemVariants} className="md:col-span-2 space-y-6">
             <a
-              href="mailto:osman@osmanventures.io"
+              href={`mailto:${siteConfig.email}`}
               className="glass rounded-xl p-5 flex items-center gap-4 group hover-glow block"
             >
               <div className="w-10 h-10 rounded-lg bg-indigo-600/20 flex items-center justify-center text-indigo-400 group-hover:bg-indigo-600/30 transition-colors">
@@ -100,12 +101,12 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-sm text-slate-500">Email</p>
-                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">osman@osmanventures.io</p>
+                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">{siteConfig.email}</p>
               </div>
             </a>
 
             <a
-              href="https://github.com/18041987op"
+              href={siteConfig.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="glass rounded-xl p-5 flex items-center gap-4 group hover-glow block"
@@ -115,7 +116,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-sm text-slate-500">GitHub</p>
-                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">18041987op</p>
+                <p className="text-white group-hover:text-indigo-300 transition-colors text-sm">{siteConfig.githubUser}</p>
               </div>
             </a>
 
@@ -125,7 +126,7 @@ export default function Contact() {
               </div>
               <div>
                 <p className="text-sm text-slate-500">Location</p>
-                <p className="text-white text-sm">Charlotte, NC</p>
+                <p className="text-white text-sm">{siteConfig.location}</p>
               </div>
             </div>
           </motion.div>
