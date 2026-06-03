@@ -54,7 +54,7 @@ export default function About() {
         >
           {/* Section Header */}
           <motion.div variants={itemVariants} className="space-y-4">
-            <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">// About Me</p>
+            <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">{"// About Me"}</p>
             <h2 className="text-4xl sm:text-5xl font-bold text-white">
               From Wrench to{" "}
               <span className="gradient-text">Code</span>

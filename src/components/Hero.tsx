@@ -3,6 +3,40 @@
 import { motion } from "framer-motion";
 import { ChevronRight, ChevronDown } from "lucide-react";
 
+interface Particle {
+  left: number;
+  top: number;
+  delay: number;
+  duration: number;
+  size: number;
+  opacity: number;
+}
+
+// Seeded PRNG (mulberry32) so particle positions are deterministic: the
+// server and client render identical values, avoiding a hydration mismatch,
+// while keeping Math.random out of the render path.
+function mulberry32(seed: number): () => number {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const PARTICLES: Particle[] = (() => {
+  const rand = mulberry32(0x05de2026);
+  return Array.from({ length: 20 }, () => ({
+    left: rand() * 100,
+    top: rand() * 100,
+    delay: rand() * 8,
+    duration: 6 + rand() * 6,
+    size: 1 + rand() * 2,
+    opacity: 0.3 + rand() * 0.4,
+  }));
+})();
+
 export default function Hero() {
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -31,18 +65,18 @@ export default function Hero() {
       <div className="glow-orb w-64 h-64 bg-cyan-600 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pulse-glow" style={{ animationDelay: "1s", opacity: 0.15 }} />
 
       {/* Floating Particles */}
-      {[...Array(20)].map((_, i) => (
+      {PARTICLES.map((p, i) => (
         <div
           key={i}
           className="particle"
           style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 8}s`,
-            animationDuration: `${6 + Math.random() * 6}s`,
-            width: `${1 + Math.random() * 2}px`,
-            height: `${1 + Math.random() * 2}px`,
-            opacity: 0.3 + Math.random() * 0.4,
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            opacity: p.opacity,
           }}
         />
       ))}

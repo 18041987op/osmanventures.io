@@ -77,7 +77,7 @@ export default function Experience() {
           transition={{ duration: 0.6 }}
           className="mb-16 space-y-4"
         >
-          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">// Experience</p>
+          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">{"// Experience"}</p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white">
             My{" "}
             <span className="gradient-text">Journey</span>

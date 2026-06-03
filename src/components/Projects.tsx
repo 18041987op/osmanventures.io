@@ -137,7 +137,7 @@ export default function Projects() {
           transition={{ duration: 0.6 }}
           className="mb-16 space-y-4"
         >
-          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">// Projects</p>
+          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">{"// Projects"}</p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white">
             Featured{" "}
             <span className="gradient-text">Work</span>

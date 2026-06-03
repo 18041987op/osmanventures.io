@@ -68,7 +68,7 @@ export default function Services() {
           transition={{ duration: 0.6 }}
           className="mb-16 space-y-4"
         >
-          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">// Services</p>
+          <p className="text-indigo-400 font-mono text-sm uppercase tracking-wider">{"// Services"}</p>
           <h2 className="text-4xl sm:text-5xl font-bold text-white">
             Available for{" "}
             <span className="gradient-text">Projects</span>
