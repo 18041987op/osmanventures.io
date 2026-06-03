@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: "Osman | Full-Stack Developer & Business Owner",
   description:
     "Full-stack developer and business owner from Charlotte, NC. Built AutoRx Center's complete tech ecosystem. Specializing in React, Next.js, Node.js, and AI integration.",
@@ -14,15 +16,15 @@ export const metadata: Metadata = {
     "Supabase",
     "portfolio",
   ],
-  authors: [{ name: "Osman", url: "https://github.com/18041987op" }],
+  authors: [{ name: "Osman", url: siteConfig.githubUrl }],
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://osmanventures.io",
+    url: siteConfig.url,
     title: "Osman | Full-Stack Developer & Business Owner",
     description:
       "Full-stack developer and business owner from Charlotte, NC. Built AutoRx Center's complete tech ecosystem.",
-    siteName: "Osman Ventures",
+    siteName: siteConfig.name,
   },
   twitter: {
     card: "summary_large_image",
