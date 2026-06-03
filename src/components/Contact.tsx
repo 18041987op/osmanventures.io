@@ -11,28 +11,36 @@ export default function Contact() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     setFormStatus("loading");
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
     const data = {
       name: formData.get("name"),
       email: formData.get("email"),
       message: formData.get("message"),
+      // Honeypot field — left empty by real users.
+      company: formData.get("company"),
     };
     try {
-      const response = await fetch("https://formspree.io/f/xyzaqnnq", {
+      const response = await fetch("/api/contact", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify(data),
       });
       if (response.ok) {
         setFormStatus("success");
-        e.currentTarget.reset();
+        form.reset();
         setTimeout(() => setFormStatus("idle"), 3000);
       } else {
         setFormStatus("error");
+        setTimeout(() => setFormStatus("idle"), 4000);
       }
     } catch {
       setFormStatus("error");
+      setTimeout(() => setFormStatus("idle"), 4000);
     }
   };
 
@@ -167,6 +175,18 @@ export default function Contact() {
                 rows={4}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors resize-none"
                 placeholder="Tell me about your project..."
+              />
+            </div>
+
+            {/* Honeypot field — hidden from users, traps bots */}
+            <div className="hidden" aria-hidden="true">
+              <label htmlFor="company">Company</label>
+              <input
+                type="text"
+                id="company"
+                name="company"
+                tabIndex={-1}
+                autoComplete="off"
               />
             </div>
 
