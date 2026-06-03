@@ -44,6 +44,24 @@ pero apunta a un destino inexistente.
 **Recomendación:** Opción **A** para restaurar el servicio **hoy mismo**, y migrar
 a **B** cuando quieras correos con tu propio dominio (`osman@osmanventures.io`).
 
+> ✅ **Implementado en este PR (Opción B — Route Handler + Resend).**
+> Ver `src/app/api/contact/route.ts` y los cambios en `Contact.tsx`. Para que
+> funcione en producción debes configurar en Vercel:
+>
+> 1. Crear una cuenta y API key en [resend.com](https://resend.com) y verificar
+>    tu dominio `osmanventures.io`.
+> 2. En **Vercel → Project → Settings → Environment Variables** añadir:
+>    - `RESEND_API_KEY` (obligatoria)
+>    - `CONTACT_FROM_EMAIL` (ej. `Osman Ventures <hello@osmanventures.io>`, debe
+>      estar en el dominio verificado)
+>    - `CONTACT_TO_EMAIL` (opcional, por defecto `osman@osmanventures.io`)
+> 3. Mientras pruebas, puedes usar el remitente compartido de Resend
+>    `onboarding@resend.dev` sin verificar dominio.
+>
+> Ver `.env.example` para la lista completa. El endpoint valida los campos,
+> incluye un honeypot anti-spam y usa `replyTo` para que puedas responder
+> directamente al remitente.
+
 ### Mejoras adicionales al formulario (independientes de la opción elegida)
 - Falta el header `Accept: application/json` en el `fetch`; Formspree lo
   recomienda para devolver JSON en vez de una redirección.
@@ -121,13 +139,13 @@ antes de cambiar, según indica `AGENTS.md`).
 
 | # | Prioridad | Tarea | Archivo(s) | Esfuerzo |
 |---|-----------|-------|------------|----------|
-| 1 | 🔴 Alta | Restaurar el formulario: crear formulario real en Formspree y reemplazar el ID `xyzaqnnq` (Opción A). | `src/components/Contact.tsx` | 5 min |
-| 2 | 🔴 Alta | Añadir `Accept: application/json`, reset del estado `error` y feedback de error visible. | `src/components/Contact.tsx` | 15 min |
+| 1 | 🔴 Alta | ✅ **Hecho** — Formulario migrado a Route Handler + Resend (`/api/contact`), reemplazando el endpoint roto de Formspree. *(Falta configurar las env vars en Vercel.)* | `src/app/api/contact/route.ts`, `src/components/Contact.tsx` | — |
+| 2 | 🔴 Alta | ✅ **Hecho** — `Accept: application/json`, reset del estado `error` con timeout y honeypot anti-spam. | `src/components/Contact.tsx` | — |
 | 3 | 🟠 Media | Corregir el hydration mismatch de las partículas (`Math.random` fuera del render). | `src/components/Hero.tsx` | 20 min |
 | 4 | 🟠 Media | Corregir los errores de lint `jsx-no-comment-textnodes` en las etiquetas `// Sección`. | `Projects/Services/Skills/About/Experience/Contact.tsx` | 10 min |
 | 5 | 🟡 Baja | Migrar `<img>` a `next/image` en las tarjetas de proyectos. | `src/components/Projects.tsx` | 20 min |
 | 6 | 🟡 Baja | Añadir imagen OG + `metadataBase` para vistas previas al compartir. | `src/app/layout.tsx`, `public/` | 30 min |
-| 7 | 🟢 Opcional | (Futuro) Migrar el envío del formulario a Route Handler + Resend con dominio propio (Opción B). | `src/app/api/contact/route.ts`, `Contact.tsx` | 1-2 h |
+| 7 | — | ✅ **Hecho** — Backend del formulario implementado con Route Handler + Resend (Opción B). | `src/app/api/contact/route.ts` | — |
 | 8 | 🟢 Opcional | Centralizar datos de contacto y actualizar el README. | varios | 30 min |
 
 ### Orden recomendado
