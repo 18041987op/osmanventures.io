@@ -8,6 +8,8 @@ import {
 import { DonutChart, BarChart } from "./Charts";
 import AccountsView from "./AccountsView";
 import EntryView from "./EntryView";
+import CategoriesView from "./CategoriesView";
+import SettingsView from "./SettingsView";
 import "./gastos.css";
 
 type Phase = "loading" | "login" | "notfound" | "app";
@@ -34,7 +36,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [persons, setPersons] = useState<{ person: string; display_name: string | null }[]>([]);
   const [scope, setScope] = useState<string>("all");
-  const [view, setView] = useState<"dashboard" | "cuentas" | "agregar">("dashboard");
+  const [view, setView] = useState<"dashboard" | "cuentas" | "agregar" | "categorias" | "ajustes">("dashboard");
 
   const loadData = useCallback(async (sc: string = "all"): Promise<boolean> => {
     const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}&person=${encodeURIComponent(sc)}`, { cache: "no-store" });
@@ -256,12 +258,16 @@ export default function GastosApp({ slug }: { slug: string }) {
 
         {view === "cuentas" && <AccountsView accounts={accounts} tx={tx} cur={cur} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
         {view === "agregar" && <EntryView accounts={accounts} cats={cats} tx={tx} cur={cur} onDone={() => { void loadData(scope); setView("dashboard"); }} onCancel={() => setView("dashboard")} />}
+        {view === "categorias" && <CategoriesView cats={cats} tx={tx} cur={cur} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
+        {view === "ajustes" && profile && <SettingsView profile={profile} slug={slug} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} onPalette={(pl) => setProfile({ ...(profile as Profile), palette: pl })} />}
 
         {!isAdmin && (
           <nav className="gx-nav">
             <button className={"gx-navbtn" + (view === "dashboard" ? " on" : "")} onClick={() => setView("dashboard")}><span>📊</span>Inicio</button>
-            <button className="gx-fab" onClick={() => setView("agregar")} title="Agregar">+</button>
             <button className={"gx-navbtn" + (view === "cuentas" ? " on" : "")} onClick={() => setView("cuentas")}><span>🏦</span>Cuentas</button>
+            <button className="gx-fab" onClick={() => setView("agregar")} title="Agregar">+</button>
+            <button className={"gx-navbtn" + (view === "categorias" ? " on" : "")} onClick={() => setView("categorias")}><span>🏷️</span>Categorías</button>
+            <button className={"gx-navbtn" + (view === "ajustes" ? " on" : "")} onClick={() => setView("ajustes")}><span>⚙️</span>Ajustes</button>
           </nav>
         )}
       </div>
