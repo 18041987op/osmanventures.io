@@ -35,13 +35,18 @@ export async function POST(req: Request) {
     if (!(amount > 0)) return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
     if (!b.account_id) return NextResponse.json({ error: "Cuenta requerida" }, { status: 400 });
 
+    // Verificar que la cuenta es del usuario y derivar un "type" válido (bank/cash)
+    const { data: acc } = await svc().from("accounts").select("kind,owner").eq("id", b.account_id).maybeSingle();
+    if (!acc || acc.owner !== s.person) return NextResponse.json({ error: "Cuenta inválida" }, { status: 400 });
+    const txType = acc.kind === "cash" ? "cash" : "bank";
+
     const dp = dateParts(b.date);
     const desc = (b.description || "").trim();
     const base = {
       person: s.person, amount, ...dp, account_id: b.account_id,
       description: desc || (b.cat_label || "Movimiento"),
       original_description: desc || (b.cat_label || "Movimiento"),
-      user_note: b.user_note || null, type: "manual", has_receipt: false,
+      user_note: b.user_note || null, type: txType, has_receipt: false,
     };
 
     let row: Record<string, unknown>;
