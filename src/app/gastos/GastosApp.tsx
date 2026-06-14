@@ -123,7 +123,7 @@ export default function GastosApp({ slug }: { slug: string }) {
     return <div className="gx" style={wrapStyle}><div className="gx-auth"><div className="gx-card">
       <div className="gx-logo">💳</div><h1>Control de Gastos</h1>
       <p className="gx-sub">Usuario &quot;{slug}&quot; no encontrado.</p>
-      <a className="gx-link" href="/gastos-beta">Elegir usuario</a>
+      <a className="gx-link" href="/gastos">Elegir usuario</a>
     </div></div></div>;
 
   if (phase === "login")
@@ -139,7 +139,7 @@ export default function GastosApp({ slug }: { slug: string }) {
         <button className="gx-key" onClick={() => pressPin("0")}>0</button>
         <button className="gx-key" onClick={() => setPin(pin.slice(0, -1))}>⌫</button>
       </div>
-      <a className="gx-link" href="/gastos-beta">Cambiar usuario</a>
+      <a className="gx-link" href="/gastos">Cambiar usuario</a>
     </div></div></div>;
 
   const occ = OCCUPATIONS[profile?.occupation || "otro"] || OCCUPATIONS.otro;

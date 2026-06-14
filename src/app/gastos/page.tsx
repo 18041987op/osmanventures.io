@@ -29,7 +29,7 @@ export default function ChooserPage() {
             list.length ? list.map((r) => {
               const o = OCCUPATIONS[r.occupation || "otro"] || OCCUPATIONS.otro;
               return (
-                <a key={r.slug} className="gx-item" href={`/gastos-beta/${encodeURIComponent(r.slug)}`}>
+                <a key={r.slug} className="gx-item" href={`/gastos/${encodeURIComponent(r.slug)}`}>
                   <span style={{ fontSize: "1.4rem" }}>{o.emoji}</span>
                   <span>{r.display_name || r.slug}</span>
                   <span className="go">›</span>
