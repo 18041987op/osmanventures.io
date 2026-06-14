@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fmt, cap, isExpense, isIncome, sumAmt, expenseByCategory, expenseByMonth,
-  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS,
+  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory,
   type Profile, type Account, type Category, type Tx, type Palette,
 } from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
@@ -99,6 +99,21 @@ export default function GastosApp({ slug }: { slug: string }) {
   const acctName = (id?: string | null) => accounts.find((a) => a.id === id)?.name || "";
   const personName = (p?: string | null) => persons.find((x) => x.person === p)?.display_name || p || "";
   const cur = profile?.currency;
+
+  async function setTxCategory(id: string | number, category: string) {
+    const r = await fetch("/api/gastos/tx/category", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, category }) });
+    if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
+    setTx((prev) => prev.map((t) => (t.id === id ? { ...t, category } : t)));
+    setDetail((d) => (d && d.id === id ? { ...d, category } : d));
+  }
+  async function autoCategorize() {
+    const r = await fetch("/api/gastos/recategorize", { method: "POST" });
+    if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
+    const j = await r.json();
+    setDrillCat(null);
+    await loadData(scope);
+    alert(`✨ ${j.changed} de ${j.total} reclasificados.`);
+  }
 
   const years = useMemo(() => {
     const y = Array.from(new Set(tx.map((t) => t.year).filter(Boolean))) as number[];
@@ -278,7 +293,10 @@ export default function GastosApp({ slug }: { slug: string }) {
             <div className="gx-mtop">
               <div><h3>{catEmoji(drillCat)} {catLabel(drillCat)}</h3>
                 <p className="muted">{fmt(sumAmt(drillTx), cur)} · {drillTx.length} {drillTx.length === 1 ? "gasto" : "gastos"}</p></div>
-              <button className="gx-x" onClick={() => setDrillCat(null)}>✕</button>
+              <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {!isAdmin && drillCat === "otros" && <button className="gx-btn ghost sm" onClick={autoCategorize}>✨ Auto-categorizar</button>}
+                <button className="gx-x" onClick={() => setDrillCat(null)}>✕</button>
+              </span>
             </div>
             <div className="gx-mbody">{drillTx.length ? drillTx.map(txRow) : <p className="muted center">Sin gastos.</p>}</div>
           </div>
@@ -296,7 +314,22 @@ export default function GastosApp({ slug }: { slug: string }) {
               <label className="muted" style={{ fontSize: ".74rem" }}>Del estado de cuenta (no editable)</label>
               <div className="gx-locked">{detail.original_description || detail.description || "—"}</div>
               <p style={{ marginTop: 10, fontSize: ".85rem" }}><b>Fecha:</b> {detail.date || "—"}</p>
-              <p style={{ fontSize: ".85rem" }}><b>Categoría:</b> {catEmoji(detail.category)} {catLabel(detail.category)}</p>
+              {isAdmin || isIncome(detail) ? (
+                <p style={{ fontSize: ".85rem" }}><b>Categoría:</b> {catEmoji(detail.category)} {catLabel(detail.category)}</p>
+              ) : (
+                <div style={{ marginTop: 8 }}>
+                  <label className="muted" style={{ fontSize: ".74rem" }}>Categoría</label>
+                  <select className="gx-inp" value={detail.category || "otros"} onChange={(e) => setTxCategory(detail.id, e.target.value)}>
+                    {cats.filter((c) => !c.parent_key).flatMap((c) => [
+                      <option key={c.key} value={c.key}>{c.emoji} {c.label}</option>,
+                      ...cats.filter((sb) => sb.parent_key === c.key).map((sb) => <option key={sb.key} value={sb.key}>&nbsp;&nbsp;↳ {sb.emoji} {sb.label}</option>),
+                    ])}
+                  </select>
+                  {(() => { const g = guessCategory(detail.original_description || detail.description || ""); return g !== "otros" && g !== detail.category ? (
+                    <button className="gx-btn ghost sm" style={{ marginTop: 8 }} onClick={() => setTxCategory(detail.id, g)}>Sugerencia: {catEmoji(g)} {catLabel(g)}</button>
+                  ) : null; })()}
+                </div>
+              )}
               {detail.account_id && <p style={{ fontSize: ".85rem" }}><b>Cuenta:</b> {acctName(detail.account_id)}</p>}
               {detail.user_note && <p style={{ fontSize: ".85rem" }}><b>Nota:</b> {detail.user_note}</p>}
             </div>

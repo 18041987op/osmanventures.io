@@ -253,3 +253,20 @@ export const KNOWN_CATS: Record<string, { label: string; emoji: string; color: s
   m.transfer = { label: "Traspaso", emoji: "🔁", color: "#26A69A" };
   return m;
 })();
+
+// Categorización automática por palabras clave (Honduras). Devuelve una clave estándar.
+export function guessCategory(desc: string): string {
+  const d = (desc || "").toUpperCase();
+  if (/\bUBER\b|INDRIVE|\bYANGO\b|\bDIDI\b|\bTAXI\b|GASOLINA|COMBUSTIBLE|\bPUMA\b|TEXACO|TERPEL|DIPPSA|ASERVICENTRO|SERVICENTRO|ESTACION|PEAJE|PARQUEO|\bBUS\b|RENT A CAR|UNO\b/.test(d)) return "transporte";
+  if (/KENTUCKY|\bKFC\b|MC ?DONALD|BURGER|\bPIZZA\b|PIZZERIA|WENDY|POPEYE|LITTLE CAESAR|CAESAR|DOMINO|PAPA JOHN|MONSTER GRILL|\bGRILL\b|DELICIOUS|DENNY|BALEAD|CHURRASCO|ASADO|COMEDOR|\bPOLLO\b|CHICK|CHIKEN|\bTACO|SUSHI|RESTAURANT|FRIDAYS|SUBWAY|DUNKIN|FOOD|COMIDA|PEDIDOSYA|\bHUGO\b|ANTOJITOS|CARNES?/.test(d)) return "restaurante";
+  if (/UNICAFE|COFFEE|\bCAFE\b|STARBUCKS|ESPRESSO/.test(d)) return "cafeteria";
+  if (/SUPERMERCADO|\bSUPER\b|\bMAXI\b|PRICESMART|WAL ?MART|LA COLONIA|DESPENSA|ABARROTERIA|ABARROTES|CARNICERIA|PULPERIA|MERCADITO|MERCADO|JUNIOR|COMERCIAL|MINI ?SUPER|VERDURAS|FRUTAS/.test(d)) return "supermercado";
+  if (/\bTIGO\b|\bCLARO\b|HONDUTEL|RECARGA/.test(d)) return "telefono";
+  if (/SPOTIFY|NETFLIX|\bAPPLE\b|APPLEACOM|DISNEY|\bHBO\b|YOUTUBE|AMAZON|\bPRIME\b|GOOGLE|MICROSOFT|CANVA|ADOBE|OPENAI|CHATGPT/.test(d)) return "suscripcion";
+  if (/UNIVERSIDAD|\bUNAH\b|UNICAH|\bUTH\b|CEUTEC|COLEGIO|MATRICULA|TUITION|LIBRERIA|UTILES|PAPELERIA/.test(d)) return "universidad";
+  if (/FARMACIA|KIELSA|HOSPITAL|CLINICA|LABORATORIO|MEDICO|DENTAL|OPTICA|\bSALUD\b/.test(d)) return "salud";
+  if (/\bENEE\b|AGUAS|\bSANAA\b|\bCABLE\b|INTERNET/.test(d)) return "servicios";
+  if (/CINE|CINEMARK|CINEPOLIS|MULTICINEMAS|TEATRO|BOLICHE/.test(d)) return "diversion";
+  if (/\bZARA\b|DIUNSA|LA MODERNA|NUEVO MUNDO|CALZADO|PAYLESS|\bBATA\b|BAZAR|FOREVER|SIMAN|\bROPA\b/.test(d)) return "ropa";
+  return "otros";
+}

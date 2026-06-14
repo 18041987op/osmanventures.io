@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { fmt, KNOWN_CATS, type Account, type Tx } from "@/lib/gastos";
+import { fmt, KNOWN_CATS, guessCategory, type Account, type Tx } from "@/lib/gastos";
 
 const MONTHS_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -33,18 +33,6 @@ function splitCSV(line: string): string[] {
     else cur += c;
   }
   cols.push(cur.trim()); return cols;
-}
-function categ(desc: string): string {
-  const d = desc.toUpperCase();
-  if (/UNICAFE|ESPRESSO|COFFEE|CAFE/.test(d)) return "cafeteria";
-  if (/PIZZA|BURGER|POPEYE|DENNY|PEDIDOSYA|PAPA JOHN|RESTAURANT/.test(d)) return "restaurante";
-  if (/UNIVERSIDAD|UNICAH|COLEGIO|MATRICULA|TUITION/.test(d)) return "universidad";
-  if (/ZARA|DIUNSA|MODERNA|NUEVO MUNDO|CALZADO/.test(d)) return "ropa";
-  if (/TIGO|CLARO|HONDUTEL/.test(d)) return "telefono";
-  if (/SPOTIFY|NETFLIX|APPLE|DISNEY|HBO|YOUTUBE/.test(d)) return "suscripcion";
-  if (/SUPERMERCADO|MAXI|PRICESMART|WALMART|COLONIA|DESPENSA/.test(d)) return "supermercado";
-  if (/UBER|TAXI|GASOLINA|COMBUSTIBLE|BUS/.test(d)) return "transporte";
-  return "otros";
 }
 function parseStatement(content: string): Row[] {
   const lines = content.split(/\r?\n/);
@@ -82,7 +70,7 @@ function parseStatement(content: string): Row[] {
       if (/TRANSFERENCIA|DEPOSITO|INTERES|CREDITOS VARIOS/i.test(descRaw)) continue;
       const clean = descRaw.replace(/Compras Tarjeta de Debito ?- ?/gi, "").replace(/\s{2,}/g, " ").replace(/\s+(HN|US|SE)\s*$/i, "").trim();
       const isAtm = /ATM|RETIRO DE EFECTIVO/i.test(descRaw);
-      const cat = isAtm ? "efectivo" : categ(clean);
+      const cat = isAtm ? "efectivo" : guessCategory(clean);
       out.push({ date, original_description: clean, amount: debit, direction: "expense",
         kind: isAtm ? "withdrawal" : "expense", counts_as_expense: !isAtm,
         category: cat, cat_label: KNOWN_CATS[cat]?.label || cat, ...base });
