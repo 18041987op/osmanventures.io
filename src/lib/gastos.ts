@@ -242,3 +242,14 @@ export function similarity(a: string, b: string): number {
 export function slugify(label: string): string {
   return norm(label).replace(/ +/g, "_").slice(0, 30) || "cat";
 }
+
+// Mapa global de categorías conocidas (iconos/colores) para mostrar bien
+// aunque la categoría no esté en la tabla del usuario.
+export const KNOWN_CATS: Record<string, { label: string; emoji: string; color: string }> = (() => {
+  const m: Record<string, { label: string; emoji: string; color: string }> = {};
+  Object.values(DEFAULT_CATS).forEach((arr) => arr.forEach((c) => { if (!m[c.key]) m[c.key] = { label: c.label, emoji: c.emoji, color: c.color }; }));
+  m.efectivo = { label: "Efectivo", emoji: "💵", color: "#ffd740" };
+  m.ingreso = { label: "Ingreso", emoji: "💰", color: "#43A047" };
+  m.transfer = { label: "Traspaso", emoji: "🔁", color: "#26A69A" };
+  return m;
+})();

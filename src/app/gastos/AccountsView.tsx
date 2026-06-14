@@ -6,8 +6,8 @@ const KINDS: Record<string, { label: string; emoji: string }> = {
   bank: { label: "Banco", emoji: "🏦" }, cash: { label: "Efectivo", emoji: "💵" }, credit: { label: "Tarjeta", emoji: "💳" },
 };
 
-export default function AccountsView({ accounts, tx, cur, onReload }:
-  { accounts: Account[]; tx: Tx[]; cur?: string | null; onReload: () => void }) {
+export default function AccountsView({ accounts, tx, cur, onReload, onClose }:
+  { accounts: Account[]; tx: Tx[]; cur?: string | null; onReload: () => void; onClose: () => void }) {
   const [form, setForm] = useState<Partial<Account> | null>(null); // null = cerrado
 
   async function save() {
@@ -31,7 +31,10 @@ export default function AccountsView({ accounts, tx, cur, onReload }:
   return (
     <div className="gx-view">
       <div className="gx-vh"><h2>Mis cuentas</h2>
-        <button className="gx-btn sm" onClick={() => setForm({ kind: "bank", color: "#5C6BC0" })}>+ Nueva</button></div>
+        <span style={{ display: "flex", gap: 8 }}>
+          <button className="gx-btn sm" onClick={() => setForm({ kind: "bank", color: "#5C6BC0" })}>+ Nueva</button>
+          <button className="gx-x" onClick={onClose} title="Cerrar">✕</button>
+        </span></div>
 
       {accounts.length === 0 ? <p className="muted center">Aún no tienes cuentas. Crea la primera.</p> :
         accounts.map((a) => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { svc, readSession, SESSION_COOKIE } from "@/lib/gastosServer";
-import { DEFAULT_CATS, type Category } from "@/lib/gastos";
+import { DEFAULT_CATS, type Category, type Account } from "@/lib/gastos";
 
 const TX_COLS =
   "id,date,description,original_description,user_note,category,subcategory,cat_label,month,month_display,month_num,year,amount,type,person,direction,kind,counts_as_expense,account_id,transfer_account_id,income_source,source_note,has_receipt";
@@ -49,19 +49,29 @@ export async function GET(req: Request) {
       sb.from("transactions").select(TX_COLS).eq("person", person).order("created_at", { ascending: false }).limit(5000),
     ]);
 
+    let accountsList = (accounts as Account[]) || [];
     let categories = (catsRes.data as Category[]) || [];
-    if (categories.length === 0 && profile) {
-      const occ = profile.occupation || "otro";
-      const defs = (DEFAULT_CATS[occ] || DEFAULT_CATS.otro).map((c, i) => ({
-        owner: person, key: c.key, label: c.label, emoji: c.emoji, color: c.color,
-        parent_key: null, is_custom: false, sort_order: i,
-      }));
-      const ins = await sb.from("categories").insert(defs).select();
-      categories = (ins.data as Category[]) || defs;
-    }
-    categories.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    const occ = profile?.occupation || "otro";
 
-    return NextResponse.json({ admin: false, profile, accounts: accounts || [], categories, tx: tx || [] });
+    // Asegurar las categorías por defecto de la ocupación (agrega las que falten)
+    const have = new Set(categories.map((c) => c.key));
+    const missing = (DEFAULT_CATS[occ] || DEFAULT_CATS.otro)
+      .filter((d) => !have.has(d.key))
+      .map((c, i) => ({ owner: person, key: c.key, label: c.label, emoji: c.emoji, color: c.color,
+        parent_key: null, is_custom: false, sort_order: categories.length + i }));
+    if (missing.length) {
+      const ins = await sb.from("categories").insert(missing).select();
+      categories = categories.concat((ins.data as Category[]) || (missing as unknown as Category[]));
+    }
+
+    // Asegurar una cuenta de Efectivo
+    if (!accountsList.some((a) => a.kind === "cash")) {
+      const ins = await sb.from("accounts").insert({ owner: person, name: "Efectivo", kind: "cash", color: "#ffd740" }).select();
+      if (ins.data) accountsList = accountsList.concat(ins.data as Account[]);
+    }
+
+    categories.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    return NextResponse.json({ admin: false, profile, accounts: accountsList, categories, tx: tx || [] });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fmt, cap, isExpense, isIncome, sumAmt, expenseByCategory, expenseByMonth,
-  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS,
+  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS,
   type Profile, type Account, type Category, type Tx, type Palette,
 } from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
@@ -91,9 +91,9 @@ export default function GastosApp({ slug }: { slug: string }) {
   const logout = async () => { await fetch("/api/gastos/logout", { method: "POST" }); setPin(""); setPhase("login"); };
 
   const catBy = useCallback((k?: string | null) => cats.find((c) => c.key === k), [cats]);
-  const catLabel = (k?: string | null) => catBy(k)?.label || (k === "ingreso" ? "Ingreso" : k || "Otros");
-  const catEmoji = (k?: string | null) => catBy(k)?.emoji || (k === "ingreso" ? "💰" : "📦");
-  const catColor = (k?: string | null) => catBy(k)?.color || "#90A4AE";
+  const catLabel = (k?: string | null) => catBy(k)?.label || (k ? KNOWN_CATS[k]?.label : undefined) || (k === "ingreso" ? "Ingreso" : k || "Otros");
+  const catEmoji = (k?: string | null) => catBy(k)?.emoji || (k ? KNOWN_CATS[k]?.emoji : undefined) || "📦";
+  const catColor = (k?: string | null) => catBy(k)?.color || (k ? KNOWN_CATS[k]?.color : undefined) || "#90A4AE";
   const acctName = (id?: string | null) => accounts.find((a) => a.id === id)?.name || "";
   const personName = (p?: string | null) => persons.find((x) => x.person === p)?.display_name || p || "";
   const cur = profile?.currency;
@@ -254,14 +254,14 @@ export default function GastosApp({ slug }: { slug: string }) {
         </div>
         )}
 
-        {view === "cuentas" && <AccountsView accounts={accounts} tx={tx} cur={cur} onReload={() => loadData(scope)} />}
-        {view === "agregar" && <EntryView accounts={accounts} cats={cats} onDone={() => { void loadData(scope); setView("dashboard"); }} />}
+        {view === "cuentas" && <AccountsView accounts={accounts} tx={tx} cur={cur} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
+        {view === "agregar" && <EntryView accounts={accounts} cats={cats} onDone={() => { void loadData(scope); setView("dashboard"); }} onCancel={() => setView("dashboard")} />}
 
         {!isAdmin && (
           <nav className="gx-nav">
             <button className={"gx-navbtn" + (view === "dashboard" ? " on" : "")} onClick={() => setView("dashboard")}><span>📊</span>Inicio</button>
+            <button className="gx-fab" onClick={() => setView("agregar")} title="Agregar">+</button>
             <button className={"gx-navbtn" + (view === "cuentas" ? " on" : "")} onClick={() => setView("cuentas")}><span>🏦</span>Cuentas</button>
-            <button className="gx-fab" onClick={() => setView("agregar")}>+</button>
           </nav>
         )}
       </div>

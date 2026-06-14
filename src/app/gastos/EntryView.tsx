@@ -7,8 +7,8 @@ const TABS: [Kind, string][] = [
   ["expense", "💸 Gasto"], ["income", "💰 Ingreso"], ["withdrawal", "🏧 Retiro"], ["transfer", "🔁 Traspaso"],
 ];
 
-export default function EntryView({ accounts, cats, onDone }:
-  { accounts: Account[]; cats: Category[]; onDone: () => void }) {
+export default function EntryView({ accounts, cats, onDone, onCancel }:
+  { accounts: Account[]; cats: Category[]; onDone: () => void; onCancel: () => void }) {
   const [kind, setKind] = useState<Kind>("expense");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -49,7 +49,7 @@ export default function EntryView({ accounts, cats, onDone }:
 
   return (
     <div className="gx-view">
-      <div className="gx-vh"><h2>Agregar movimiento</h2></div>
+      <div className="gx-vh"><h2>Agregar movimiento</h2><button className="gx-x" onClick={onCancel} title="Cancelar">✕</button></div>
       <div className="gx-segs">
         {TABS.map(([k, l]) => <button key={k} className={"gx-seg" + (k === kind ? " on" : "")} onClick={() => setKind(k)}>{l}</button>)}
       </div>
