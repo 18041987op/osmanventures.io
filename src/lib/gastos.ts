@@ -2,15 +2,6 @@
 // Control de Gastos — capa base (Supabase + config + helpers)
 // Misma base de datos que el proyecto original (no se migra nada).
 // ════════════════════════════════════════════════════════════════
-import { createClient } from "@supabase/supabase-js";
-
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ozfmydiutupboupttkmz.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "sb_publishable_TcG2qZdwO5PQuJAJ701xtg_XArHPpsG";
-
-export const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export const PIN_SALT = "gastos-hn-2026";
 
 // ── Tipos ───────────────────────────────────────────────────────

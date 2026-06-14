@@ -1,28 +1,25 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  db, PIN_SALT, sha256hex, fmt, cap, isExpense, isIncome, sumAmt,
-  expenseByCategory, expenseByMonth, MONTHS_ES, DEFAULT_CATS, PALETTES,
-  DEFAULT_PALETTE_KEY, OCCUPATIONS,
+  fmt, cap, isExpense, isIncome, sumAmt, expenseByCategory, expenseByMonth,
+  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS,
   type Profile, type Account, type Category, type Tx, type Palette,
 } from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
 import "./gastos.css";
 
 type Phase = "loading" | "login" | "notfound" | "app";
-const TX_COLS =
-  "id,date,description,original_description,user_note,category,subcategory,cat_label,month,month_display,month_num,year,amount,type,person,direction,kind,counts_as_expense,account_id,income_source,source_note,has_receipt";
 
-function resolvePalette(p?: Palette | null): Required<Pick<Palette, "primary" | "accent" | "bg">> & { dark: boolean } {
-  if (p?.key && PALETTES[p.key]) { const x = PALETTES[p.key]; return { primary: x.primary!, accent: x.accent!, bg: x.bg!, dark: !!x.dark }; }
-  if (p?.primary) return { primary: p.primary, accent: p.accent || p.primary, bg: p.bg || "#f4f5fb", dark: !!p.dark };
-  const d = PALETTES[DEFAULT_PALETTE_KEY]; return { primary: d.primary!, accent: d.accent!, bg: d.bg!, dark: false };
+function resolvePalette(p?: Palette | null) {
+  if (p?.key && PALETTES[p.key]) { const x = PALETTES[p.key]; return { primary: x.primary!, accent: x.accent!, bg: x.bg! }; }
+  if (p?.primary) return { primary: p.primary, accent: p.accent || p.primary, bg: p.bg || "#f4f5fb" };
+  const d = PALETTES[DEFAULT_PALETTE_KEY]; return { primary: d.primary!, accent: d.accent!, bg: d.bg! };
 }
 
 export default function GastosApp({ slug }: { slug: string }) {
   const [phase, setPhase] = useState<Phase>("loading");
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [person, setPerson] = useState<string>("");
+  const [loginName, setLoginName] = useState<string>(slug);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [tx, setTx] = useState<Tx[]>([]);
@@ -33,80 +30,57 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [drillCat, setDrillCat] = useState<string | null>(null);
   const [detail, setDetail] = useState<Tx | null>(null);
 
-  // ── cargar datos del usuario ──
-  const loadData = useCallback(async (pers: string, prof: Profile) => {
-    const [{ data: accs }, catsRes, { data: txs }] = await Promise.all([
-      db.from("accounts").select("*").eq("owner", pers).eq("archived", false).order("created_at"),
-      db.from("categories").select("*").eq("owner", pers).eq("archived", false),
-      db.from("transactions").select(TX_COLS).eq("person", pers).order("created_at", { ascending: false }).limit(5000),
-    ]);
-    setAccounts((accs as Account[]) || []);
-    let categories = (catsRes.data as Category[]) || [];
-    if (categories.length === 0) {
-      const occ = prof.occupation || "otro";
-      const defs = (DEFAULT_CATS[occ] || DEFAULT_CATS.otro).map((c, i) => ({
-        owner: pers, key: c.key, label: c.label, emoji: c.emoji, color: c.color,
-        parent_key: null, is_custom: false, sort_order: i,
-      }));
-      const ins = await db.from("categories").insert(defs).select();
-      categories = (ins.data as Category[]) || defs;
-    }
-    setCats(categories.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
-    const txList = (txs as Tx[]) || [];
+  const loadData = useCallback(async (): Promise<boolean> => {
+    const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
+    if (r.status === 401) return false;
+    const j = await r.json();
+    setProfile(j.profile as Profile);
+    setAccounts((j.accounts as Account[]) || []);
+    setCats(((j.categories as Category[]) || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
+    const txList = (j.tx as Tx[]) || [];
     setTx(txList);
     const years = Array.from(new Set(txList.map((t) => t.year).filter(Boolean))) as number[];
     years.sort((a, b) => b - a);
     setFYear(years[0] ?? "all");
     setPhase("app");
-  }, []);
+    return true;
+  }, [slug]);
 
-  // ── arranque: buscar perfil por slug + restaurar sesión ──
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data } = await db.from("profiles")
-        .select("person,display_name,occupation,currency,palette,slug").eq("slug", slug).maybeSingle();
+      const ok = await loadData();
       if (!alive) return;
-      if (!data) { setPhase("notfound"); return; }
-      const prof = data as Profile;
-      setProfile(prof); setPerson(prof.person);
+      if (ok) return;
+      // necesita login: traer nombre para mostrar
       try {
-        const raw = sessionStorage.getItem("gx_auth_" + slug);
-        if (raw) {
-          const s = JSON.parse(raw) as { h: string; day: string };
-          if (s.day === new Date().toISOString().slice(0, 10)) {
-            const { data: ok } = await db.from("profiles").select("person").eq("slug", slug).eq("pin_hash", s.h).maybeSingle();
-            if (ok && alive) { await loadData(prof.person, prof); return; }
-          }
-        }
+        const r = await fetch("/api/gastos/users");
+        const j = await r.json();
+        const u = ((j.users as { slug: string; display_name: string | null }[]) || []).find((x) => x.slug === slug);
+        if (!alive) return;
+        if (!u) { setPhase("notfound"); return; }
+        setLoginName(u.display_name || slug);
       } catch {}
       if (alive) setPhase("login");
     })();
     return () => { alive = false; };
   }, [slug, loadData]);
 
-  // ── PIN ──
   const pressPin = (d: string) => {
     if (pin.length >= 4) return;
     const np = pin + d; setPin(np);
     if (np.length === 4) void submitPin(np);
   };
   const submitPin = async (p: string) => {
-    const h = await sha256hex(p + PIN_SALT);
-    const { data } = await db.from("profiles").select("person,display_name,occupation,currency,palette,slug")
-      .eq("slug", slug).eq("pin_hash", h).maybeSingle();
-    if (data) {
-      sessionStorage.setItem("gx_auth_" + slug, JSON.stringify({ h, day: new Date().toISOString().slice(0, 10) }));
-      const prof = data as Profile; setProfile(prof);
-      await loadData(prof.person, prof);
-    } else {
-      setErr("PIN incorrecto"); setPin("");
-      setTimeout(() => setErr(""), 2500);
-    }
+    const r = await fetch("/api/gastos/login", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slug, pin: p }),
+    });
+    if (r.ok) { setPin(""); await loadData(); }
+    else { setErr("PIN incorrecto"); setPin(""); setTimeout(() => setErr(""), 2500); }
   };
-  const logout = () => { sessionStorage.removeItem("gx_auth_" + slug); setPin(""); setPhase("login"); };
+  const logout = async () => { await fetch("/api/gastos/logout", { method: "POST" }); setPin(""); setPhase("login"); };
 
-  // ── helpers de categorías ──
   const catBy = useCallback((k?: string | null) => cats.find((c) => c.key === k), [cats]);
   const catLabel = (k?: string | null) => catBy(k)?.label || (k === "ingreso" ? "Ingreso" : k || "Otros");
   const catEmoji = (k?: string | null) => catBy(k)?.emoji || (k === "ingreso" ? "💰" : "📦");
@@ -114,7 +88,6 @@ export default function GastosApp({ slug }: { slug: string }) {
   const acctName = (id?: string | null) => accounts.find((a) => a.id === id)?.name || "";
   const cur = profile?.currency;
 
-  // ── filtros ──
   const years = useMemo(() => {
     const y = Array.from(new Set(tx.map((t) => t.year).filter(Boolean))) as number[];
     return y.sort((a, b) => b - a);
@@ -134,11 +107,8 @@ export default function GastosApp({ slug }: { slug: string }) {
   const catEntries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
 
   const pal = resolvePalette(profile?.palette);
-  const wrapStyle = {
-    ["--primary"]: pal.primary, ["--accent"]: pal.accent, ["--bg"]: pal.bg,
-  } as React.CSSProperties;
+  const wrapStyle = { ["--primary"]: pal.primary, ["--accent"]: pal.accent, ["--bg"]: pal.bg } as React.CSSProperties;
 
-  // ── render ──
   if (phase === "loading")
     return <div className="gx"><div className="gx-spin">Cargando…</div></div>;
 
@@ -153,7 +123,7 @@ export default function GastosApp({ slug }: { slug: string }) {
     return <div className="gx" style={wrapStyle}><div className="gx-auth"><div className="gx-card">
       <div className="gx-logo">💳</div><h1>Control de Gastos</h1>
       <p className="gx-sub">Ingresa el PIN de</p>
-      <p className="gx-user">{profile?.display_name || cap(person)}</p>
+      <p className="gx-user">{loginName}</p>
       <div className="gx-dots">{[0,1,2,3].map((i) => <span key={i} className={"gx-dot" + (i < pin.length ? " on" : "")} />)}</div>
       <div className="gx-err">{err}</div>
       <div className="gx-pad">
@@ -191,7 +161,7 @@ export default function GastosApp({ slug }: { slug: string }) {
     <div className="gx" style={wrapStyle}>
       <div className="gx-shell">
         <header className="gx-hdr">
-          <span>{occ.emoji} {profile?.display_name || cap(person)}</span>
+          <span>{occ.emoji} {profile?.display_name || cap(slug)}</span>
           <button className="gx-out" onClick={logout} title="Salir">⎋</button>
         </header>
 
@@ -260,7 +230,7 @@ export default function GastosApp({ slug }: { slug: string }) {
             {filtered.length === 0 ? <p className="muted center">Sin movimientos.</p> : filtered.slice(0, 15).map(txRow)}
           </div>
 
-          <p className="gx-hint">Versión nueva (beta). Próximamente: cuentas, agregar movimientos, importar y ajustes.</p>
+          <p className="gx-hint">Versión nueva (beta) con acceso seguro por servidor. Próximamente: cuentas, agregar, importar y ajustes.</p>
         </div>
       </div>
 
