@@ -255,7 +255,7 @@ export default function GastosApp({ slug }: { slug: string }) {
         )}
 
         {view === "cuentas" && <AccountsView accounts={accounts} tx={tx} cur={cur} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
-        {view === "agregar" && <EntryView accounts={accounts} cats={cats} onDone={() => { void loadData(scope); setView("dashboard"); }} onCancel={() => setView("dashboard")} />}
+        {view === "agregar" && <EntryView accounts={accounts} cats={cats} tx={tx} cur={cur} onDone={() => { void loadData(scope); setView("dashboard"); }} onCancel={() => setView("dashboard")} />}
 
         {!isAdmin && (
           <nav className="gx-nav">

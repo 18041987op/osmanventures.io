@@ -1,15 +1,16 @@
 "use client";
 import { useState } from "react";
-import { INCOME_SOURCES, type Account, type Category } from "@/lib/gastos";
+import { INCOME_SOURCES, type Account, type Category, type Tx } from "@/lib/gastos";
+import ImportPanel from "./ImportPanel";
 
 type Kind = "expense" | "income" | "withdrawal" | "transfer";
-const TABS: [Kind, string][] = [
-  ["expense", "💸 Gasto"], ["income", "💰 Ingreso"], ["withdrawal", "🏧 Retiro"], ["transfer", "🔁 Traspaso"],
+const TABS: [Kind | "importar", string][] = [
+  ["expense", "💸 Gasto"], ["income", "💰 Ingreso"], ["withdrawal", "🏧 Retiro"], ["transfer", "🔁 Traspaso"], ["importar", "📄 Importar"],
 ];
 
-export default function EntryView({ accounts, cats, onDone, onCancel }:
-  { accounts: Account[]; cats: Category[]; onDone: () => void; onCancel: () => void }) {
-  const [kind, setKind] = useState<Kind>("expense");
+export default function EntryView({ accounts, cats, tx, cur, onDone, onCancel }:
+  { accounts: Account[]; cats: Category[]; tx: Tx[]; cur?: string | null; onDone: () => void; onCancel: () => void }) {
+  const [kind, setKind] = useState<Kind | "importar">("expense");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [account, setAccount] = useState(accounts[0]?.id || "");
@@ -55,7 +56,8 @@ export default function EntryView({ accounts, cats, onDone, onCancel }:
       </div>
 
       <div className="gx-panel">
-        {accounts.length === 0 ? <p className="muted">Primero crea una cuenta en la pestaña Cuentas.</p> : <>
+        {kind === "importar" ? <ImportPanel accounts={accounts} tx={tx} cur={cur} onDone={onDone} /> :
+         accounts.length === 0 ? <p className="muted">Primero crea una cuenta en la pestaña Cuentas.</p> : <>
           <label className="gx-lbl">Monto</label>
           <input className="gx-inp" type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
 
