@@ -29,11 +29,17 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [fMonth, setFMonth] = useState<string>("all");
   const [drillCat, setDrillCat] = useState<string | null>(null);
   const [detail, setDetail] = useState<Tx | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [persons, setPersons] = useState<{ person: string; display_name: string | null }[]>([]);
+  const [scope, setScope] = useState<string>("all");
 
-  const loadData = useCallback(async (): Promise<boolean> => {
-    const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
+  const loadData = useCallback(async (sc: string = "all"): Promise<boolean> => {
+    const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}&person=${encodeURIComponent(sc)}`, { cache: "no-store" });
     if (r.status === 401) return false;
     const j = await r.json();
+    setIsAdmin(!!j.admin);
+    setPersons((j.persons as { person: string; display_name: string | null }[]) || []);
+    setScope(j.scope || sc);
     setProfile(j.profile as Profile);
     setAccounts((j.accounts as Account[]) || []);
     setCats(((j.categories as Category[]) || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
@@ -86,6 +92,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const catEmoji = (k?: string | null) => catBy(k)?.emoji || (k === "ingreso" ? "💰" : "📦");
   const catColor = (k?: string | null) => catBy(k)?.color || "#90A4AE";
   const acctName = (id?: string | null) => accounts.find((a) => a.id === id)?.name || "";
+  const personName = (p?: string | null) => persons.find((x) => x.person === p)?.display_name || p || "";
   const cur = profile?.currency;
 
   const years = useMemo(() => {
@@ -150,7 +157,7 @@ export default function GastosApp({ slug }: { slug: string }) {
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="d">{t.description || t.original_description || "(sin descripción)"}</span>
-          <span className="s">{t.date || ""}{t.account_id ? " · " + acctName(t.account_id) : ""}{t.user_note ? " · 📝" : ""}</span>
+          <span className="s">{t.date || ""}{isAdmin && scope === "all" && t.person ? " · " + personName(t.person) : ""}{t.account_id ? " · " + acctName(t.account_id) : ""}{t.user_note ? " · 📝" : ""}</span>
         </span>
         <span className={"a " + (inc ? "gx-pos" : "")}>{inc ? "+" : "-"}{fmt(t.amount, cur)}</span>
       </button>
@@ -161,8 +168,17 @@ export default function GastosApp({ slug }: { slug: string }) {
     <div className="gx" style={wrapStyle}>
       <div className="gx-shell">
         <header className="gx-hdr">
-          <span>{occ.emoji} {profile?.display_name || cap(slug)}</span>
-          <button className="gx-out" onClick={logout} title="Salir">⎋</button>
+          <span>{isAdmin ? "🛠️ Admin" : `${occ.emoji} ${profile?.display_name || cap(slug)}`}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {isAdmin && (
+              <select className="gx-sel" style={{ maxWidth: 160 }} value={scope}
+                onChange={(e) => { setScope(e.target.value); void loadData(e.target.value); }}>
+                <option value="all">Todos</option>
+                {persons.map((p) => <option key={p.person} value={p.person}>{p.display_name || p.person}</option>)}
+              </select>
+            )}
+            <button className="gx-out" onClick={logout} title="Salir">⎋</button>
+          </div>
         </header>
 
         <div className="gx-view">
