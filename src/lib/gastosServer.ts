@@ -44,3 +44,9 @@ export function readSession(token: string | undefined | null): Session | null {
 export function sha256hex(str: string): string {
   return crypto.createHash("sha256").update(str).digest("hex");
 }
+
+import { cookies } from "next/headers";
+export async function currentSession(): Promise<Session | null> {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  return readSession(token);
+}

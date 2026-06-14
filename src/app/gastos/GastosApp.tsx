@@ -6,6 +6,8 @@ import {
   type Profile, type Account, type Category, type Tx, type Palette,
 } from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
+import AccountsView from "./AccountsView";
+import EntryView from "./EntryView";
 import "./gastos.css";
 
 type Phase = "loading" | "login" | "notfound" | "app";
@@ -32,6 +34,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [persons, setPersons] = useState<{ person: string; display_name: string | null }[]>([]);
   const [scope, setScope] = useState<string>("all");
+  const [view, setView] = useState<"dashboard" | "cuentas" | "agregar">("dashboard");
 
   const loadData = useCallback(async (sc: string = "all"): Promise<boolean> => {
     const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}&person=${encodeURIComponent(sc)}`, { cache: "no-store" });
@@ -181,6 +184,7 @@ export default function GastosApp({ slug }: { slug: string }) {
           </div>
         </header>
 
+        {view === "dashboard" && (
         <div className="gx-view">
           <div className="gx-filters">
             <select className="gx-sel" value={String(fYear)} onChange={(e) => { setFYear(e.target.value === "all" ? "all" : Number(e.target.value)); setFMonth("all"); }}>
@@ -246,8 +250,20 @@ export default function GastosApp({ slug }: { slug: string }) {
             {filtered.length === 0 ? <p className="muted center">Sin movimientos.</p> : filtered.slice(0, 15).map(txRow)}
           </div>
 
-          <p className="gx-hint">Versión nueva (beta) con acceso seguro por servidor. Próximamente: cuentas, agregar, importar y ajustes.</p>
+          <p className="gx-hint">Importar estados de cuenta y ajustes llegan en las próximas fases.</p>
         </div>
+        )}
+
+        {view === "cuentas" && <AccountsView accounts={accounts} tx={tx} cur={cur} onReload={() => loadData(scope)} />}
+        {view === "agregar" && <EntryView accounts={accounts} cats={cats} onDone={() => { void loadData(scope); setView("dashboard"); }} />}
+
+        {!isAdmin && (
+          <nav className="gx-nav">
+            <button className={"gx-navbtn" + (view === "dashboard" ? " on" : "")} onClick={() => setView("dashboard")}><span>📊</span>Inicio</button>
+            <button className={"gx-navbtn" + (view === "cuentas" ? " on" : "")} onClick={() => setView("cuentas")}><span>🏦</span>Cuentas</button>
+            <button className="gx-fab" onClick={() => setView("agregar")}>+</button>
+          </nav>
+        )}
       </div>
 
       {drillCat && (
