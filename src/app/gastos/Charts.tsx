@@ -14,8 +14,9 @@ export function DonutChart({ labels, data, colors, onSlice }:{
       type: "doughnut",
       data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: "#fff" }] },
       options: {
-        cutout: "62%",
-        plugins: { legend: { position: "bottom", labels: { font: { size: 11 } } } },
+        maintainAspectRatio: false,
+        cutout: "60%",
+        plugins: { legend: { position: "bottom", labels: { font: { size: 13 }, padding: 12, boxWidth: 14 } } },
         onClick: (_e, els) => { if (els.length && onSlice) onSlice(els[0].index); },
       },
     });
@@ -32,8 +33,8 @@ export function BarChart({ labels, data, color }:{ labels: string[]; data: numbe
     inst.current = new Chart(ref.current, {
       type: "bar",
       data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 6 }] },
-      options: { plugins: { legend: { display: false } },
-        scales: { x: { grid: { display: false } }, y: { ticks: { font: { size: 10 } } } } },
+      options: { maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { font: { size: 12 } }, grid: { display: false } }, y: { ticks: { font: { size: 12 } } } } },
     });
     return () => inst.current?.destroy();
   }, [labels, data, color]);

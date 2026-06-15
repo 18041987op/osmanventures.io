@@ -93,3 +93,29 @@ input[type=color].gx-inp{height:44px;padding:4px}
 .gx-navbtn span{font-size:1.2rem}
 .gx-navbtn.on{color:var(--primary);font-weight:700}
 .gx-fab{width:50px;height:50px;margin-top:-14px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;font-size:1.7rem;border:none;cursor:pointer;box-shadow:0 4px 14px var(--primary-soft2)}
+
+/* ════════════ Legibilidad: fuentes más grandes + gráfica amplia ════════════ */
+.gx-chart{ height: 320px; }
+.gx-hdr{ font-size: 1.25rem; }
+.gx-vh h2{ font-size: 1.3rem; }
+.gx-h{ font-size: 1.1rem; }
+.gx-c .ic{ font-size: 1.5rem; }
+.gx-c .v{ font-size: 1.55rem; }
+.gx-c .l{ font-size: .86rem; }
+.gx-ic{ width: 44px; height: 44px; font-size: 1.3rem; border-radius: 13px; }
+.gx-name{ font-size: 1.02rem; }
+.gx-amt{ font-size: 1rem; }
+.gx-amt small{ font-size: .8rem; }
+.gx-tx .d{ font-size: 1rem; }
+.gx-tx .s{ font-size: .84rem; }
+.gx-tx .a{ font-size: 1rem; }
+.gx-sel{ font-size: .95rem; padding: 11px 12px; }
+.gx-lbl{ font-size: .92rem; }
+.gx-inp{ font-size: 1.02rem; padding: 12px 14px; }
+.gx-hint{ font-size: .84rem; }
+.gx-navbtn{ font-size: .74rem; }
+.gx-navbtn span{ font-size: 1.45rem; }
+.gx-btn{ font-size: .98rem; }
+.gx-seg{ font-size: .9rem; }
+.gx .muted{ font-size: .92rem; }
+.gx-chev{ font-size: 1.5rem; }
