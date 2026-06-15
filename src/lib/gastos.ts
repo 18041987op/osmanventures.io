@@ -345,3 +345,29 @@ Object.assign(KNOWN_CATS, {
 export function merchantKey(desc: string): string {
   return (desc || "").toUpperCase().replace(/[0-9]+/g, " ").replace(/[^A-Z ]/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
 }
+
+// Predicción de presupuesto por categoría a partir del historial
+export interface BudgetItem { key: string; actual: number; predicted: number; }
+export interface Budget { cy: number; cm: number; items: BudgetItem[]; totalActual: number; totalPredicted: number; }
+export function computeBudget(tx: Tx[]): Budget | null {
+  const exp = tx.filter(isExpense);
+  if (!exp.length) return null;
+  const pkey = (t: Tx) => `${t.year}-${String(t.month_num || 0).padStart(2, "0")}`;
+  const periods = Array.from(new Set(exp.map(pkey))).sort();
+  const current = periods[periods.length - 1];
+  const [cy, cm] = current.split("-").map(Number);
+  const cats = Array.from(new Set(exp.map((t) => t.category || "otros")));
+  const items: BudgetItem[] = cats.map((key) => {
+    const actual = exp.filter((t) => t.category === key && t.year === cy && (t.month_num || 0) === cm)
+      .reduce((s, t) => s + Number(t.amount || 0), 0);
+    const hist: Record<string, number> = {};
+    exp.filter((t) => t.category === key && pkey(t) !== current)
+      .forEach((t) => { const p = pkey(t); hist[p] = (hist[p] || 0) + Number(t.amount || 0); });
+    const vals = Object.values(hist);
+    const predicted = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : actual;
+    return { key, actual, predicted };
+  }).filter((i) => i.actual > 0 || i.predicted > 0).sort((a, b) => b.predicted - a.predicted);
+  const totalActual = items.reduce((s, i) => s + i.actual, 0);
+  const totalPredicted = items.reduce((s, i) => s + i.predicted, 0);
+  return { cy, cm, items, totalActual, totalPredicted };
+}

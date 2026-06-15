@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fmt, cap, isExpense, isIncome, sumAmt, expenseByCategory, expenseByMonth,
-  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory,
+  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory, computeBudget,
   type Profile, type Account, type Category, type Tx, type Palette,
 } from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
@@ -144,6 +144,7 @@ export default function GastosApp({ slug }: { slug: string }) {
         return { ...p, exp, inc, bal: inc - exp, count: ptx.length };
       })
     : [];
+  const budget = !(isAdmin && scope === "all") ? computeBudget(tx) : null;
   const catEntries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
 
   const pal = resolvePalette(profile?.palette);
@@ -270,6 +271,33 @@ export default function GastosApp({ slug }: { slug: string }) {
             <div className="gx-panel">
               <h3 className="gx-h">Gasto por mes</h3>
               <div className="gx-chart"><BarChart labels={barLabels} data={barData} color={pal.primary} /></div>
+            </div>
+          )}
+
+          {budget && budget.items.length > 0 && (
+            <div className="gx-panel">
+              <h3 className="gx-h">Presupuesto de {MONTHS_ES[budget.cm]} {budget.cy}</h3>
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "1rem" }}>
+                  <span>Llevas {fmt(budget.totalActual, cur)}</span>
+                  <span className="muted">de ~{fmt(budget.totalPredicted, cur)}</span>
+                </div>
+                <span className="gx-bar" style={{ height: 9, marginTop: 7 }}><i style={{ width: Math.min(100, budget.totalPredicted > 0 ? (budget.totalActual / budget.totalPredicted) * 100 : 0) + "%", background: budget.totalActual > budget.totalPredicted ? "var(--red)" : "var(--primary)" }} /></span>
+              </div>
+              {budget.items.map((it) => {
+                const over = it.actual > it.predicted && it.predicted > 0;
+                return (
+                  <div key={it.key} className="gx-row" style={{ cursor: "default" }}>
+                    <span className="gx-ic" style={{ background: catColor(it.key) + "22", color: catColor(it.key) }}>{catEmoji(it.key)}</span>
+                    <span className="gx-info">
+                      <span className="gx-name">{catLabel(it.key)}{over ? " ⚠️" : ""}</span>
+                      <span className="gx-bar"><i style={{ width: Math.min(100, it.predicted > 0 ? (it.actual / it.predicted) * 100 : 0) + "%", background: over ? "var(--red)" : catColor(it.key) }} /></span>
+                    </span>
+                    <span className="gx-amt">{fmt(it.actual, cur)}<small>de {fmt(it.predicted, cur)}</small></span>
+                  </div>
+                );
+              })}
+              <p className="gx-hint">Estimado según el promedio de tus meses anteriores.</p>
             </div>
           )}
 
