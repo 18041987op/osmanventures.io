@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fmt, cap, isExpense, isIncome, sumAmt, expenseByCategory, expenseByMonth,
-  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory, computeBudget,
+  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory, computeBudget, computeAnt, antDefault,
   type Profile, type Account, type Category, type Tx, type Palette,
 } from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
@@ -37,6 +37,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [persons, setPersons] = useState<{ person: string; display_name: string | null; currency?: string | null; occupation?: string | null }[]>([]);
   const [scope, setScope] = useState<string>("all");
   const [view, setView] = useState<"dashboard" | "cuentas" | "agregar" | "categorias" | "ajustes">("dashboard");
+  const [analysisOpen, setAnalysisOpen] = useState(false);
 
   const loadData = useCallback(async (sc: string = "all"): Promise<boolean> => {
     const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}&person=${encodeURIComponent(sc)}`, { cache: "no-store" });
@@ -76,6 +77,8 @@ export default function GastosApp({ slug }: { slug: string }) {
     })();
     return () => { alive = false; };
   }, [slug, loadData]);
+
+  useEffect(() => { setAnalysisOpen(false); }, [view, scope]);
 
   const pressPin = (d: string) => {
     if (pin.length >= 4) return;
@@ -145,6 +148,7 @@ export default function GastosApp({ slug }: { slug: string }) {
       })
     : [];
   const budget = !(isAdmin && scope === "all") ? computeBudget(tx) : null;
+  const ant = budget ? computeAnt(tx, profile?.ant_rules?.max ?? antDefault(profile?.occupation)) : null;
   const catEntries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
 
   const pal = resolvePalette(profile?.palette);
@@ -274,30 +278,64 @@ export default function GastosApp({ slug }: { slug: string }) {
             </div>
           )}
 
-          {budget && budget.items.length > 0 && (
+          {(budget || ant) && (
             <div className="gx-panel">
-              <h3 className="gx-h">Presupuesto de {MONTHS_ES[budget.cm]} {budget.cy}</h3>
-              <div style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "1rem" }}>
-                  <span>Llevas {fmt(budget.totalActual, cur)}</span>
-                  <span className="muted">de ~{fmt(budget.totalPredicted, cur)}</span>
+              <button className="gx-collap" onClick={() => setAnalysisOpen((o) => !o)}>
+                <span>🔮 Análisis del mes{budget ? ` · ${MONTHS_ES[budget.cm]}` : ""}</span>
+                <span className="gx-chev">{analysisOpen ? "▾" : "▸"}</span>
+              </button>
+              {analysisOpen && (
+                <div style={{ marginTop: 14 }}>
+                  {budget && budget.items.length > 0 && (
+                    <>
+                      <h3 className="gx-h">Presupuesto estimado</h3>
+                      <div style={{ marginBottom: 12 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "1rem" }}>
+                          <span>Llevas {fmt(budget.totalActual, cur)}</span>
+                          <span className="muted">de ~{fmt(budget.totalPredicted, cur)}</span>
+                        </div>
+                        <span className="gx-bar" style={{ height: 9, marginTop: 7 }}><i style={{ width: Math.min(100, budget.totalPredicted > 0 ? (budget.totalActual / budget.totalPredicted) * 100 : 0) + "%", background: budget.totalActual > budget.totalPredicted ? "var(--red)" : "var(--primary)" }} /></span>
+                      </div>
+                      {budget.items.map((it) => {
+                        const over = it.actual > it.predicted && it.predicted > 0;
+                        return (
+                          <div key={it.key} className="gx-row" style={{ cursor: "default" }}>
+                            <span className="gx-ic" style={{ background: catColor(it.key) + "22", color: catColor(it.key) }}>{catEmoji(it.key)}</span>
+                            <span className="gx-info">
+                              <span className="gx-name">{catLabel(it.key)}{over ? " ⚠️" : ""}</span>
+                              <span className="gx-bar"><i style={{ width: Math.min(100, it.predicted > 0 ? (it.actual / it.predicted) * 100 : 0) + "%", background: over ? "var(--red)" : catColor(it.key) }} /></span>
+                            </span>
+                            <span className="gx-amt">{fmt(it.actual, cur)}<small>de {fmt(it.predicted, cur)}</small></span>
+                          </div>
+                        );
+                      })}
+                      <p className="gx-hint">Estimado según el promedio de tus meses anteriores.</p>
+                    </>
+                  )}
+
+                  {ant && (
+                    <>
+                      <h3 className="gx-h" style={{ marginTop: 18 }}>🐜 Gastos hormiga</h3>
+                      {ant.count === 0 ? <p className="muted">Sin compras pequeñas (≤ {fmt(ant.threshold, cur)}) este mes. 👍</p> : <>
+                        <div className="sug-box">
+                          Llevas <b>{fmt(ant.total, cur)}</b> en <b>{ant.count}</b> compras pequeñas (≤ {fmt(ant.threshold, cur)}) este mes — {ant.monthExpense > 0 ? Math.round((ant.total / ant.monthExpense) * 100) : 0}% de tu gasto del mes.
+                        </div>
+                        {ant.items.slice(0, 6).map((it) => (
+                          <div key={it.key} className="gx-row" style={{ cursor: "default" }}>
+                            <span className="gx-ic" style={{ background: catColor(it.key) + "22", color: catColor(it.key) }}>{catEmoji(it.key)}</span>
+                            <span className="gx-info">
+                              <span className="gx-name">{catLabel(it.key)}</span>
+                              <span className="tx-sub" style={{ color: "var(--muted)", fontSize: ".82rem" }}>{it.count} {it.count === 1 ? "compra peque\u00f1a" : "compras peque\u00f1as"}</span>
+                            </span>
+                            <span className="gx-amt">{fmt(it.total, cur)}</span>
+                          </div>
+                        ))}
+                        <p className="gx-hint">Umbral configurable en Ajustes.</p>
+                      </>}
+                    </>
+                  )}
                 </div>
-                <span className="gx-bar" style={{ height: 9, marginTop: 7 }}><i style={{ width: Math.min(100, budget.totalPredicted > 0 ? (budget.totalActual / budget.totalPredicted) * 100 : 0) + "%", background: budget.totalActual > budget.totalPredicted ? "var(--red)" : "var(--primary)" }} /></span>
-              </div>
-              {budget.items.map((it) => {
-                const over = it.actual > it.predicted && it.predicted > 0;
-                return (
-                  <div key={it.key} className="gx-row" style={{ cursor: "default" }}>
-                    <span className="gx-ic" style={{ background: catColor(it.key) + "22", color: catColor(it.key) }}>{catEmoji(it.key)}</span>
-                    <span className="gx-info">
-                      <span className="gx-name">{catLabel(it.key)}{over ? " ⚠️" : ""}</span>
-                      <span className="gx-bar"><i style={{ width: Math.min(100, it.predicted > 0 ? (it.actual / it.predicted) * 100 : 0) + "%", background: over ? "var(--red)" : catColor(it.key) }} /></span>
-                    </span>
-                    <span className="gx-amt">{fmt(it.actual, cur)}<small>de {fmt(it.predicted, cur)}</small></span>
-                  </div>
-                );
-              })}
-              <p className="gx-hint">Estimado según el promedio de tus meses anteriores.</p>
+              )}
             </div>
           )}
 

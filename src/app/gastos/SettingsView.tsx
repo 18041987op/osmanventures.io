@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, type Profile, type Palette } from "@/lib/gastos";
+import { PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, antDefault, type Profile, type Palette } from "@/lib/gastos";
 
 function resolveKey(p?: Palette | null) {
   if (p?.key && PALETTES[p.key]) return p.key;
@@ -15,6 +15,7 @@ export default function SettingsView({ profile, slug, isAdmin, onReload, onClose
   const [currency, setCurrency] = useState(profile.currency || "HNL");
   const [newSlug, setNewSlug] = useState(profile.slug || slug);
   const [pin, setPin] = useState("");
+  const [antMax, setAntMax] = useState(String(profile.ant_rules?.max ?? antDefault(profile.occupation)));
   const [primary, setPrimary] = useState(profile.palette?.primary || PALETTES[resolveKey(profile.palette)]?.primary || "#5C6BC0");
   const [accent, setAccent] = useState(profile.palette?.accent || PALETTES[resolveKey(profile.palette)]?.accent || "#7E57C2");
   const curKey = resolveKey(profile.palette);
@@ -54,6 +55,11 @@ export default function SettingsView({ profile, slug, isAdmin, onReload, onClose
   async function saveSlug() {
     const ok = await post("/api/gastos/profile", { slug: newSlug });
     if (ok) alert("Listo. Tu URL ahora es /gastos/" + newSlug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, ""));
+  }
+  async function saveAnt() {
+    const n = parseFloat(antMax);
+    if (!(n > 0)) { alert("Pon un monto válido."); return; }
+    if (await post("/api/gastos/profile", { ant_rules: { max: n } })) { onReload(); alert("Umbral guardado."); }
   }
   async function savePin() {
     if (!/^\d{4}$/.test(pin)) { alert("El PIN debe ser de 4 dígitos."); return; }
@@ -109,6 +115,14 @@ export default function SettingsView({ profile, slug, isAdmin, onReload, onClose
         <label className="gx-lbl">Cambiar PIN (4 dígitos)</label>
         <input className="gx-inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} onChange={(e) => setPin(e.target.value)} />
         <button className="gx-btn sm" style={{ marginTop: 8, display: "block" }} onClick={savePin}>Cambiar PIN</button>
+      </div>
+
+      <div className="gx-panel">
+        <h3 className="gx-h">🐜 Gastos hormiga</h3>
+        <label className="gx-lbl">Umbral: contar como "hormiga" los gastos hasta</label>
+        <input className="gx-inp" type="number" inputMode="decimal" value={antMax} onChange={(e) => setAntMax(e.target.value)} />
+        <small className="muted">Cada compra individual por debajo de este monto cuenta como gasto hormiga.</small>
+        <button className="gx-btn sm" style={{ marginTop: 8, display: "block" }} onClick={saveAnt}>Guardar umbral</button>
       </div>
 
       {isAdmin && (

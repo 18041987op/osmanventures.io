@@ -11,6 +11,7 @@ export interface Profile {
   occupation?: string | null;
   currency?: string | null;
   palette?: Palette | null;
+  ant_rules?: { max?: number } | null;
   slug?: string | null;
 }
 export interface Palette {
@@ -350,19 +351,16 @@ export function merchantKey(desc: string): string {
 export interface BudgetItem { key: string; actual: number; predicted: number; }
 export interface Budget { cy: number; cm: number; items: BudgetItem[]; totalActual: number; totalPredicted: number; }
 export function computeBudget(tx: Tx[]): Budget | null {
-  const exp = tx.filter(isExpense);
+  const exp = tx.filter(isExpense).filter((t) => Number.isFinite(Number(t.year)) && (t.month_num || 0) >= 1);
   if (!exp.length) return null;
-  const pkey = (t: Tx) => `${t.year}-${String(t.month_num || 0).padStart(2, "0")}`;
-  const periods = Array.from(new Set(exp.map(pkey))).sort();
-  const current = periods[periods.length - 1];
-  const [cy, cm] = current.split("-").map(Number);
+  const ord = (t: Tx) => Number(t.year) * 100 + (t.month_num || 0);
+  const maxOrd = Math.max(...exp.map(ord));
+  const cy = Math.floor(maxOrd / 100), cm = maxOrd % 100;
   const cats = Array.from(new Set(exp.map((t) => t.category || "otros")));
   const items: BudgetItem[] = cats.map((key) => {
-    const actual = exp.filter((t) => t.category === key && t.year === cy && (t.month_num || 0) === cm)
-      .reduce((s, t) => s + Number(t.amount || 0), 0);
-    const hist: Record<string, number> = {};
-    exp.filter((t) => t.category === key && pkey(t) !== current)
-      .forEach((t) => { const p = pkey(t); hist[p] = (hist[p] || 0) + Number(t.amount || 0); });
+    const actual = exp.filter((t) => t.category === key && ord(t) === maxOrd).reduce((s, t) => s + Number(t.amount || 0), 0);
+    const hist: Record<number, number> = {};
+    exp.filter((t) => t.category === key && ord(t) !== maxOrd).forEach((t) => { const o = ord(t); hist[o] = (hist[o] || 0) + Number(t.amount || 0); });
     const vals = Object.values(hist);
     const predicted = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : actual;
     return { key, actual, predicted };
@@ -370,4 +368,25 @@ export function computeBudget(tx: Tx[]): Budget | null {
   const totalActual = items.reduce((s, i) => s + i.actual, 0);
   const totalPredicted = items.reduce((s, i) => s + i.predicted, 0);
   return { cy, cm, items, totalActual, totalPredicted };
+}
+
+// Gastos hormiga: compras pequeñas (<= umbral) del mes más reciente
+export interface AntItem { key: string; total: number; count: number; }
+export interface Ant { threshold: number; total: number; count: number; monthExpense: number; items: AntItem[]; }
+export function antDefault(occupation?: string | null): number {
+  return ({ student: 150, parent: 300, professional: 500 } as Record<string, number>)[occupation || "otro"] || 250;
+}
+export function computeAnt(tx: Tx[], threshold: number): Ant | null {
+  const exp = tx.filter(isExpense).filter((t) => Number.isFinite(Number(t.year)) && (t.month_num || 0) >= 1);
+  if (!exp.length) return null;
+  const ord = (t: Tx) => Number(t.year) * 100 + (t.month_num || 0);
+  const maxOrd = Math.max(...exp.map(ord));
+  const month = exp.filter((t) => ord(t) === maxOrd);
+  const monthExpense = month.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const small = month.filter((t) => Number(t.amount || 0) <= threshold && Number(t.amount || 0) > 0);
+  const total = small.reduce((s, t) => s + Number(t.amount || 0), 0);
+  const byCat: Record<string, { total: number; count: number }> = {};
+  small.forEach((t) => { const k = t.category || "otros"; (byCat[k] ||= { total: 0, count: 0 }); byCat[k].total += Number(t.amount || 0); byCat[k].count += 1; });
+  const items: AntItem[] = Object.entries(byCat).map(([key, v]) => ({ key, total: v.total, count: v.count })).sort((a, b) => b.total - a.total);
+  return { threshold, total, count: small.length, monthExpense, items };
 }

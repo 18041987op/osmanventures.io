@@ -5,12 +5,13 @@ export async function POST(req: Request) {
   try {
     const s = await currentSession();
     if (!s) return NextResponse.json({ error: "no-auth" }, { status: 401 });
-    const b = (await req.json()) as { display_name?: string; occupation?: string; currency?: string; palette?: unknown; slug?: string };
+    const b = (await req.json()) as { display_name?: string; occupation?: string; currency?: string; palette?: unknown; ant_rules?: unknown; slug?: string };
     const patch: Record<string, unknown> = {};
     if (b.display_name !== undefined) patch.display_name = b.display_name;
     if (b.occupation !== undefined) patch.occupation = b.occupation;
     if (b.currency !== undefined) patch.currency = b.currency;
     if (b.palette !== undefined) patch.palette = b.palette;
+    if (b.ant_rules !== undefined) patch.ant_rules = b.ant_rules;
     if (b.slug !== undefined) {
       const slug = (b.slug || "").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
       if (!slug) return NextResponse.json({ error: "URL inválida" }, { status: 400 });

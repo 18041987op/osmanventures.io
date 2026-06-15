@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     // ── Vista ADMIN: ver todo o filtrar por persona ──
     if (isAdmin) {
       const { data: profiles } = await sb.from("profiles")
-        .select("person,display_name,occupation,currency,palette,slug");
+        .select("person,display_name,occupation,currency,palette,ant_rules,slug");
       const persons = (profiles || []).filter((p) => p.person !== "admin")
         .map((p) => ({ person: p.person, display_name: p.display_name, currency: p.currency, occupation: p.occupation }));
       const adminProfile = (profiles || []).find((p) => p.person === "admin") || { person: "admin", display_name: "Admin" };
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     // ── Vista usuario normal ──
     const person = sess.person;
     const [{ data: profile }, { data: accounts }, catsRes, { data: tx }] = await Promise.all([
-      sb.from("profiles").select("person,display_name,occupation,currency,palette,slug").eq("person", person).maybeSingle(),
+      sb.from("profiles").select("person,display_name,occupation,currency,palette,ant_rules,slug").eq("person", person).maybeSingle(),
       sb.from("accounts").select("*").eq("owner", person).eq("archived", false).order("created_at"),
       sb.from("categories").select("*").eq("owner", person).eq("archived", false),
       sb.from("transactions").select(TX_COLS).eq("person", person).order("created_at", { ascending: false }).limit(5000),
