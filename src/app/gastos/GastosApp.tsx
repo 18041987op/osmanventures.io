@@ -34,7 +34,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [drillCat, setDrillCat] = useState<string | null>(null);
   const [detail, setDetail] = useState<Tx | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [persons, setPersons] = useState<{ person: string; display_name: string | null }[]>([]);
+  const [persons, setPersons] = useState<{ person: string; display_name: string | null; currency?: string | null; occupation?: string | null }[]>([]);
   const [scope, setScope] = useState<string>("all");
   const [view, setView] = useState<"dashboard" | "cuentas" | "agregar" | "categorias" | "ajustes">("dashboard");
 
@@ -43,7 +43,7 @@ export default function GastosApp({ slug }: { slug: string }) {
     if (r.status === 401) return false;
     const j = await r.json();
     setIsAdmin(!!j.admin);
-    setPersons((j.persons as { person: string; display_name: string | null }[]) || []);
+    setPersons((j.persons as { person: string; display_name: string | null; currency?: string | null; occupation?: string | null }[]) || []);
     setScope(j.scope || sc);
     setProfile(j.profile as Profile);
     setAccounts((j.accounts as Account[]) || []);
@@ -98,7 +98,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const catColor = (k?: string | null) => catBy(k)?.color || (k ? KNOWN_CATS[k]?.color : undefined) || "#90A4AE";
   const acctName = (id?: string | null) => accounts.find((a) => a.id === id)?.name || "";
   const personName = (p?: string | null) => persons.find((x) => x.person === p)?.display_name || p || "";
-  const cur = profile?.currency;
+  const cur = isAdmin ? (scope !== "all" ? persons.find((p) => p.person === scope)?.currency : profile?.currency) : profile?.currency;
   const availKeys = new Set(cats.map((c) => c.key));
 
   async function setTxCategory(id: string | number, category: string) {
@@ -132,6 +132,14 @@ export default function GastosApp({ slug }: { slug: string }) {
   const totalExp = sumAmt(expenses);
   const totalInc = sumAmt(incomes);
   const byCat = expenseByCategory(expenses);
+  const perUser = (isAdmin && scope === "all")
+    ? persons.map((p) => {
+        const ptx = filtered.filter((t) => t.person === p.person);
+        const exp = sumAmt(ptx.filter(isExpense));
+        const inc = sumAmt(ptx.filter(isIncome));
+        return { ...p, exp, inc, bal: inc - exp, count: ptx.length };
+      })
+    : [];
   const catEntries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
 
   const pal = resolvePalette(profile?.palette);
@@ -215,6 +223,23 @@ export default function GastosApp({ slug }: { slug: string }) {
             </select>
           </div>
 
+          {isAdmin && scope === "all" ? (
+            <div className="gx-panel">
+              <h3 className="gx-h">Resumen por usuario</h3>
+              {perUser.length === 0 ? <p className="muted center">Sin usuarios.</p> : perUser.map((u) => (
+                <button key={u.person} className="gx-row" onClick={() => { setScope(u.person); void loadData(u.person); }}>
+                  <span className="gx-ic" style={{ background: "var(--primary-soft)" }}>{(OCCUPATIONS[u.occupation || "otro"] || OCCUPATIONS.otro).emoji}</span>
+                  <span className="gx-info">
+                    <span className="gx-name">{u.display_name || u.person}</span>
+                    <span className="tx-sub" style={{ color: "var(--muted)", fontSize: ".82rem" }}>Gasto {fmt(u.exp, u.currency)} · Balance {fmt(u.bal, u.currency)}</span>
+                  </span>
+                  <span className="gx-amt">{u.count}<small>mov.</small></span>
+                  <span className="gx-chev">›</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+          <>
           <div className="gx-cards">
             <div className="gx-c"><div className="ic" style={{ color: "var(--primary)" }}>💸</div><div className="v">{fmt(totalExp, cur)}</div><div className="l">Gastado</div></div>
             <div className="gx-c"><div className="ic" style={{ color: "var(--accent)" }}>💰</div><div className="v">{fmt(totalInc, cur)}</div><div className="l">Ingresos</div></div>
@@ -268,7 +293,8 @@ export default function GastosApp({ slug }: { slug: string }) {
             {filtered.length === 0 ? <p className="muted center">Sin movimientos.</p> : filtered.slice(0, 15).map(txRow)}
           </div>
 
-          <p className="gx-hint">Importar estados de cuenta y ajustes llegan en las próximas fases.</p>
+          </>
+          )}
         </div>
         )}
 
@@ -277,15 +303,13 @@ export default function GastosApp({ slug }: { slug: string }) {
         {view === "categorias" && <CategoriesView cats={cats} tx={tx} cur={cur} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
         {view === "ajustes" && profile && <SettingsView profile={profile} slug={slug} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} onPalette={(pl) => setProfile({ ...(profile as Profile), palette: pl })} />}
 
-        {!isAdmin && (
-          <nav className="gx-nav">
-            <button className={"gx-navbtn" + (view === "dashboard" ? " on" : "")} onClick={() => setView("dashboard")}><span>📊</span>Inicio</button>
-            <button className={"gx-navbtn" + (view === "cuentas" ? " on" : "")} onClick={() => setView("cuentas")}><span>🏦</span>Cuentas</button>
-            <button className="gx-fab" onClick={() => setView("agregar")} title="Agregar">+</button>
-            <button className={"gx-navbtn" + (view === "categorias" ? " on" : "")} onClick={() => setView("categorias")}><span>🏷️</span>Categorías</button>
-            <button className={"gx-navbtn" + (view === "ajustes" ? " on" : "")} onClick={() => setView("ajustes")}><span>⚙️</span>Ajustes</button>
-          </nav>
-        )}
+        <nav className="gx-nav">
+          <button className={"gx-navbtn" + (view === "dashboard" ? " on" : "")} onClick={() => setView("dashboard")}><span>📊</span>Inicio</button>
+          {!isAdmin && <button className={"gx-navbtn" + (view === "cuentas" ? " on" : "")} onClick={() => setView("cuentas")}><span>🏦</span>Cuentas</button>}
+          {!isAdmin && <button className="gx-fab" onClick={() => setView("agregar")} title="Agregar">+</button>}
+          {!isAdmin && <button className={"gx-navbtn" + (view === "categorias" ? " on" : "")} onClick={() => setView("categorias")}><span>🏷️</span>Categorías</button>}
+          <button className={"gx-navbtn" + (view === "ajustes" ? " on" : "")} onClick={() => setView("ajustes")}><span>⚙️</span>Ajustes</button>
+        </nav>
       </div>
 
       {drillCat && (

@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       const { data: profiles } = await sb.from("profiles")
         .select("person,display_name,occupation,currency,palette,slug");
       const persons = (profiles || []).filter((p) => p.person !== "admin")
-        .map((p) => ({ person: p.person, display_name: p.display_name }));
+        .map((p) => ({ person: p.person, display_name: p.display_name, currency: p.currency, occupation: p.occupation }));
       const adminProfile = (profiles || []).find((p) => p.person === "admin") || { person: "admin", display_name: "Admin" };
 
       let txQ = sb.from("transactions").select(TX_COLS).order("created_at", { ascending: false }).limit(8000);
