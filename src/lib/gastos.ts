@@ -371,7 +371,8 @@ export function computeBudget(tx: Tx[]): Budget | null {
 }
 
 // Gastos hormiga: compras pequeñas (<= umbral) del mes más reciente, por categoría/comercio
-export interface AntMerchant { merchant: string; label: string; total: number; count: number; category: string; }
+export interface AntItem { id: string | number; amount: number; date?: string | null; desc: string; }
+export interface AntMerchant { merchant: string; label: string; total: number; count: number; category: string; items: AntItem[]; }
 export interface AntCat { total: number; count: number; merchants: AntMerchant[]; }
 export interface Ant { threshold: number; total: number; count: number; monthExpense: number; byCat: Record<string, AntCat>; }
 export function antDefault(occupation?: string | null): number {
@@ -396,14 +397,15 @@ export function computeAnt(tx: Tx[], threshold: number, excluded?: Set<string>):
     const cat = t.category || "otros";
     const mk = merchantKey(t.original_description || t.description || "") || "(otro)";
     const id = cat + "|" + mk;
-    if (!mAgg[id]) mAgg[id] = { merchant: mk, label: (t.original_description || t.description || mk) as string, total: 0, count: 0, category: cat };
+    if (!mAgg[id]) mAgg[id] = { merchant: mk, label: (t.original_description || t.description || mk) as string, total: 0, count: 0, category: cat, items: [] };
     mAgg[id].total += Number(t.amount || 0); mAgg[id].count += 1;
+    mAgg[id].items.push({ id: t.id, amount: Number(t.amount || 0), date: t.date, desc: (t.original_description || t.description || mk) as string });
   });
   const byCat: Record<string, AntCat> = {};
   Object.values(mAgg).forEach((m) => {
     (byCat[m.category] ||= { total: 0, count: 0, merchants: [] });
     byCat[m.category].total += m.total; byCat[m.category].count += m.count; byCat[m.category].merchants.push(m);
   });
-  Object.values(byCat).forEach((c) => c.merchants.sort((a, b) => b.total - a.total));
+  Object.values(byCat).forEach((c) => { c.merchants.sort((a, b) => b.total - a.total); c.merchants.forEach((m) => m.items.sort((x, y) => y.amount - x.amount)); });
   return { threshold, total, count: small.length, monthExpense, byCat };
 }

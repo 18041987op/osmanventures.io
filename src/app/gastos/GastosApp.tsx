@@ -39,7 +39,9 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [view, setView] = useState<"dashboard" | "cuentas" | "agregar" | "categorias" | "ajustes">("dashboard");
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [exclusions, setExclusions] = useState<{ merchant: string; label: string | null }[]>([]);
-  const [antDrill, setAntDrill] = useState<string | null>(null);
+  const [antDrill, setAntDrillState] = useState<string | null>(null);
+  const [antOpen, setAntOpen] = useState<Set<string>>(new Set());
+  const setAntDrill = (k: string | null) => { setAntOpen(new Set()); setAntDrillState(k); };
 
   const loadData = useCallback(async (sc: string = "all"): Promise<boolean> => {
     const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}&person=${encodeURIComponent(sc)}`, { cache: "no-store" });
@@ -321,8 +323,8 @@ export default function GastosApp({ slug }: { slug: string }) {
                               <span className="gx-name">{catLabel(it.key)}{over ? " ⚠️" : ""}</span>
                               <span className="gx-bar"><i style={{ width: Math.min(100, it.predicted > 0 ? (it.actual / it.predicted) * 100 : 0) + "%", background: over ? "var(--red)" : catColor(it.key) }} /></span>
                               {ant && ant.byCat[it.key] && (
-                                <button onClick={() => setAntDrill(it.key)} style={{ display: "block", marginTop: 6, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", color: "var(--red)", fontSize: ".8rem" }}>
-                                  🐜 {fmt(ant.byCat[it.key].total, cur)} en {ant.byCat[it.key].count} {ant.byCat[it.key].count === 1 ? "compra pequeña" : "compras pequeñas"} — revisar ›
+                                <button className="gx-antnote" onClick={() => setAntDrill(it.key)}>
+                                  🐜 <b>{fmt(ant.byCat[it.key].total, cur)}</b> en {ant.byCat[it.key].count} {ant.byCat[it.key].count === 1 ? "compra pequeña" : "compras pequeñas"} — revisar ›
                                 </button>
                               )}
                             </span>
@@ -428,15 +430,28 @@ export default function GastosApp({ slug }: { slug: string }) {
               <button className="gx-x" onClick={() => setAntDrill(null)}>✕</button>
             </div>
             <div className="gx-mbody">
-              {ant.byCat[antDrill].merchants.map((m) => (
-                <div key={m.merchant} className="gx-row" style={{ cursor: "default" }}>
-                  <span className="gx-info">
-                    <span className="gx-name">{m.label}</span>
-                    <span className="tx-sub" style={{ color: "var(--muted)", fontSize: ".82rem" }}>{m.count} {m.count === 1 ? "compra" : "compras"} · {fmt(m.total, cur)}</span>
-                  </span>
-                  {canEdit && <button className="gx-btn ghost sm" onClick={() => excludeMerchant(m.merchant, m.label)}>necesario</button>}
-                </div>
-              ))}
+              {ant.byCat[antDrill].merchants.map((m) => {
+                const open = antOpen.has(m.merchant);
+                return (
+                  <div key={m.merchant}>
+                    <div className="gx-row" style={{ cursor: "default" }}>
+                      <button className="gx-info" style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: m.count > 1 ? "pointer" : "default" }}
+                        onClick={() => { if (m.count <= 1) return; setAntOpen((p) => { const n = new Set(p); n.has(m.merchant) ? n.delete(m.merchant) : n.add(m.merchant); return n; }); }}>
+                        <span className="gx-name">{m.label}</span>
+                        <span className="tx-sub" style={{ color: "var(--muted)", fontSize: ".82rem" }}>{m.count} {m.count === 1 ? "compra" : "compras"} · {fmt(m.total, cur)}{m.count > 1 ? (open ? "  ▾ ocultar" : "  ▸ ver cada una") : ""}</span>
+                      </button>
+                      {canEdit && <button className="gx-btn warn sm" onClick={() => excludeMerchant(m.merchant, m.label)}>necesario</button>}
+                    </div>
+                    {open && m.count > 1 && (
+                      <div className="gx-antexp">
+                        {m.items.map((it) => (
+                          <div key={it.id} className="row"><span>{it.date || "—"}</span><b>{fmt(it.amount, cur)}</b></div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <p className="gx-hint">&quot;Necesario&quot; lo saca de gastos hormiga y la app lo recuerda.</p>
             </div>
           </div>
