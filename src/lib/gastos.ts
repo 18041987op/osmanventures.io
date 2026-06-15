@@ -370,23 +370,40 @@ export function computeBudget(tx: Tx[]): Budget | null {
   return { cy, cm, items, totalActual, totalPredicted };
 }
 
-// Gastos hormiga: compras pequeñas (<= umbral) del mes más reciente
-export interface AntItem { key: string; total: number; count: number; }
-export interface Ant { threshold: number; total: number; count: number; monthExpense: number; items: AntItem[]; }
+// Gastos hormiga: compras pequeñas (<= umbral) del mes más reciente, por categoría/comercio
+export interface AntMerchant { merchant: string; label: string; total: number; count: number; category: string; }
+export interface AntCat { total: number; count: number; merchants: AntMerchant[]; }
+export interface Ant { threshold: number; total: number; count: number; monthExpense: number; byCat: Record<string, AntCat>; }
 export function antDefault(occupation?: string | null): number {
   return ({ student: 150, parent: 300, professional: 500 } as Record<string, number>)[occupation || "otro"] || 250;
 }
-export function computeAnt(tx: Tx[], threshold: number): Ant | null {
+export function computeAnt(tx: Tx[], threshold: number, excluded?: Set<string>): Ant | null {
   const exp = tx.filter(isExpense).filter((t) => Number.isFinite(Number(t.year)) && (t.month_num || 0) >= 1);
   if (!exp.length) return null;
   const ord = (t: Tx) => Number(t.year) * 100 + (t.month_num || 0);
   const maxOrd = Math.max(...exp.map(ord));
   const month = exp.filter((t) => ord(t) === maxOrd);
   const monthExpense = month.reduce((s, t) => s + Number(t.amount || 0), 0);
-  const small = month.filter((t) => Number(t.amount || 0) <= threshold && Number(t.amount || 0) > 0);
+  const small = month.filter((t) => {
+    const a = Number(t.amount || 0);
+    if (!(a > 0 && a <= threshold)) return false;
+    if (excluded && excluded.has(merchantKey(t.original_description || t.description || ""))) return false;
+    return true;
+  });
   const total = small.reduce((s, t) => s + Number(t.amount || 0), 0);
-  const byCat: Record<string, { total: number; count: number }> = {};
-  small.forEach((t) => { const k = t.category || "otros"; (byCat[k] ||= { total: 0, count: 0 }); byCat[k].total += Number(t.amount || 0); byCat[k].count += 1; });
-  const items: AntItem[] = Object.entries(byCat).map(([key, v]) => ({ key, total: v.total, count: v.count })).sort((a, b) => b.total - a.total);
-  return { threshold, total, count: small.length, monthExpense, items };
+  const mAgg: Record<string, AntMerchant> = {};
+  small.forEach((t) => {
+    const cat = t.category || "otros";
+    const mk = merchantKey(t.original_description || t.description || "") || "(otro)";
+    const id = cat + "|" + mk;
+    if (!mAgg[id]) mAgg[id] = { merchant: mk, label: (t.original_description || t.description || mk) as string, total: 0, count: 0, category: cat };
+    mAgg[id].total += Number(t.amount || 0); mAgg[id].count += 1;
+  });
+  const byCat: Record<string, AntCat> = {};
+  Object.values(mAgg).forEach((m) => {
+    (byCat[m.category] ||= { total: 0, count: 0, merchants: [] });
+    byCat[m.category].total += m.total; byCat[m.category].count += m.count; byCat[m.category].merchants.push(m);
+  });
+  Object.values(byCat).forEach((c) => c.merchants.sort((a, b) => b.total - a.total));
+  return { threshold, total, count: small.length, monthExpense, byCat };
 }

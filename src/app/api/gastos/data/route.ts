@@ -34,9 +34,14 @@ export async function GET(req: Request) {
         sb.from("accounts").select("*").eq("archived", false),
         sb.from("categories").select("*").eq("archived", false),
       ]);
+      let exclusions: { merchant: string; label: string | null }[] = [];
+      if (scope !== "all") {
+        const { data: ex } = await sb.from("ant_exclusions").select("merchant,label").eq("owner", scope);
+        exclusions = ex || [];
+      }
       return NextResponse.json({
         admin: true, scope, persons, profile: adminProfile,
-        accounts: accounts || [], categories: cats || [], tx: tx || [],
+        accounts: accounts || [], categories: cats || [], tx: tx || [], exclusions,
       });
     }
 
@@ -71,7 +76,8 @@ export async function GET(req: Request) {
     }
 
     categories.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-    return NextResponse.json({ admin: false, profile, accounts: accountsList, categories, tx: tx || [] });
+    const { data: ex } = await sb.from("ant_exclusions").select("merchant,label").eq("owner", person);
+    return NextResponse.json({ admin: false, profile, accounts: accountsList, categories, tx: tx || [], exclusions: ex || [] });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

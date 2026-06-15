@@ -38,6 +38,8 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [scope, setScope] = useState<string>("all");
   const [view, setView] = useState<"dashboard" | "cuentas" | "agregar" | "categorias" | "ajustes">("dashboard");
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [exclusions, setExclusions] = useState<{ merchant: string; label: string | null }[]>([]);
+  const [antDrill, setAntDrill] = useState<string | null>(null);
 
   const loadData = useCallback(async (sc: string = "all"): Promise<boolean> => {
     const r = await fetch(`/api/gastos/data?slug=${encodeURIComponent(slug)}&person=${encodeURIComponent(sc)}`, { cache: "no-store" });
@@ -51,6 +53,7 @@ export default function GastosApp({ slug }: { slug: string }) {
     setCats(((j.categories as Category[]) || []).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)));
     const txList = (j.tx as Tx[]) || [];
     setTx(txList);
+    setExclusions((j.exclusions as { merchant: string; label: string | null }[]) || []);
     const years = Array.from(new Set(txList.map((t) => t.year).filter(Boolean))) as number[];
     years.sort((a, b) => b - a);
     setFYear(j.admin ? "all" : (years[0] ?? "all"));
@@ -107,6 +110,18 @@ export default function GastosApp({ slug }: { slug: string }) {
   const ownAccounts = target ? accounts.filter((a) => a.owner === target) : accounts;
   const ownCats = target ? cats.filter((c) => c.owner === target) : cats;
   const canEdit = !isAdmin || scope !== "all";
+  async function excludeMerchant(merchant: string, label: string) {
+    const person = isAdmin && scope !== "all" ? scope : undefined;
+    const r = await fetch("/api/gastos/ant/exclude", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ merchant, label, person }) });
+    if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
+    await loadData(scope);
+  }
+  async function includeMerchant(merchant: string) {
+    const person = isAdmin && scope !== "all" ? scope : undefined;
+    const r = await fetch("/api/gastos/ant/include", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ merchant, person }) });
+    if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
+    await loadData(scope);
+  }
 
   async function setTxCategory(id: string | number, category: string) {
     const r = await fetch("/api/gastos/tx/category", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, category }) });
@@ -148,7 +163,8 @@ export default function GastosApp({ slug }: { slug: string }) {
       })
     : [];
   const budget = !(isAdmin && scope === "all") ? computeBudget(tx) : null;
-  const ant = budget ? computeAnt(tx, profile?.ant_rules?.max ?? antDefault(profile?.occupation)) : null;
+  const excludedSet = new Set(exclusions.map((e) => e.merchant));
+  const ant = budget ? computeAnt(tx, profile?.ant_rules?.max ?? antDefault(profile?.occupation), excludedSet) : null;
   const catEntries = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
 
   const pal = resolvePalette(profile?.palette);
@@ -304,6 +320,11 @@ export default function GastosApp({ slug }: { slug: string }) {
                             <span className="gx-info">
                               <span className="gx-name">{catLabel(it.key)}{over ? " ⚠️" : ""}</span>
                               <span className="gx-bar"><i style={{ width: Math.min(100, it.predicted > 0 ? (it.actual / it.predicted) * 100 : 0) + "%", background: over ? "var(--red)" : catColor(it.key) }} /></span>
+                              {ant && ant.byCat[it.key] && (
+                                <button onClick={() => setAntDrill(it.key)} style={{ display: "block", marginTop: 6, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", color: "var(--red)", fontSize: ".8rem" }}>
+                                  🐜 {fmt(ant.byCat[it.key].total, cur)} en {ant.byCat[it.key].count} {ant.byCat[it.key].count === 1 ? "compra pequeña" : "compras pequeñas"} — revisar ›
+                                </button>
+                              )}
                             </span>
                             <span className="gx-amt">{fmt(it.actual, cur)}<small>de {fmt(it.predicted, cur)}</small></span>
                           </div>
@@ -316,22 +337,22 @@ export default function GastosApp({ slug }: { slug: string }) {
                   {ant && (
                     <>
                       <h3 className="gx-h" style={{ marginTop: 18 }}>🐜 Gastos hormiga</h3>
-                      {ant.count === 0 ? <p className="muted">Sin compras pequeñas (≤ {fmt(ant.threshold, cur)}) este mes. 👍</p> : <>
-                        <div className="sug-box">
-                          Llevas <b>{fmt(ant.total, cur)}</b> en <b>{ant.count}</b> compras pequeñas (≤ {fmt(ant.threshold, cur)}) este mes — {ant.monthExpense > 0 ? Math.round((ant.total / ant.monthExpense) * 100) : 0}% de tu gasto del mes.
-                        </div>
-                        {ant.items.slice(0, 6).map((it) => (
-                          <div key={it.key} className="gx-row" style={{ cursor: "default" }}>
-                            <span className="gx-ic" style={{ background: catColor(it.key) + "22", color: catColor(it.key) }}>{catEmoji(it.key)}</span>
-                            <span className="gx-info">
-                              <span className="gx-name">{catLabel(it.key)}</span>
-                              <span className="tx-sub" style={{ color: "var(--muted)", fontSize: ".82rem" }}>{it.count} {it.count === 1 ? "compra peque\u00f1a" : "compras peque\u00f1as"}</span>
-                            </span>
-                            <span className="gx-amt">{fmt(it.total, cur)}</span>
-                          </div>
-                        ))}
-                        <p className="gx-hint">Umbral configurable en Ajustes.</p>
-                      </>}
+                      {ant.count === 0
+                        ? <p className="muted">Sin compras pequeñas (≤ {fmt(ant.threshold, cur)}) este mes. 👍</p>
+                        : <div className="sug-box">Llevas <b>{fmt(ant.total, cur)}</b> en <b>{ant.count}</b> compras pequeñas (≤ {fmt(ant.threshold, cur)}) — {ant.monthExpense > 0 ? Math.round((ant.total / ant.monthExpense) * 100) : 0}% de tu gasto del mes. Tócalas bajo cada categoría del presupuesto para revisarlas.</div>}
+                      {exclusions.length > 0 && (
+                        <>
+                          <div style={{ fontWeight: 600, fontSize: ".9rem", margin: "12px 0 6px" }}>Marcados como necesarios</div>
+                          {exclusions.map((e) => (
+                            <div key={e.merchant} className="gx-row" style={{ cursor: "default" }}>
+                              <span className="gx-ic" style={{ background: "var(--primary-soft)" }}>✅</span>
+                              <span className="gx-info"><span className="gx-name" style={{ fontSize: ".92rem" }}>{e.label || e.merchant}</span></span>
+                              {canEdit && <button className="gx-btn ghost sm" onClick={() => includeMerchant(e.merchant)}>Volver a hormiga</button>}
+                            </div>
+                          ))}
+                        </>
+                      )}
+                      <p className="gx-hint">Umbral configurable en Ajustes.</p>
                     </>
                   )}
                 </div>
@@ -394,6 +415,30 @@ export default function GastosApp({ slug }: { slug: string }) {
               </span>
             </div>
             <div className="gx-mbody">{drillTx.length ? drillTx.map(txRow) : <p className="muted center">Sin gastos.</p>}</div>
+          </div>
+        </div>
+      )}
+
+      {antDrill && ant && ant.byCat[antDrill] && (
+        <div className="gx-modal" onClick={() => setAntDrill(null)}>
+          <div className="gx-mcard" onClick={(ev) => ev.stopPropagation()}>
+            <div className="gx-mtop">
+              <div><h3>{catEmoji(antDrill)} {catLabel(antDrill)}</h3>
+                <p className="muted">🐜 {fmt(ant.byCat[antDrill].total, cur)} en {ant.byCat[antDrill].count} compras pequeñas</p></div>
+              <button className="gx-x" onClick={() => setAntDrill(null)}>✕</button>
+            </div>
+            <div className="gx-mbody">
+              {ant.byCat[antDrill].merchants.map((m) => (
+                <div key={m.merchant} className="gx-row" style={{ cursor: "default" }}>
+                  <span className="gx-info">
+                    <span className="gx-name">{m.label}</span>
+                    <span className="tx-sub" style={{ color: "var(--muted)", fontSize: ".82rem" }}>{m.count} {m.count === 1 ? "compra" : "compras"} · {fmt(m.total, cur)}</span>
+                  </span>
+                  {canEdit && <button className="gx-btn ghost sm" onClick={() => excludeMerchant(m.merchant, m.label)}>necesario</button>}
+                </div>
+              ))}
+              <p className="gx-hint">&quot;Necesario&quot; lo saca de gastos hormiga y la app lo recuerda.</p>
+            </div>
           </div>
         </div>
       )}
