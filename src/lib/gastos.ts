@@ -198,6 +198,18 @@ export function isIncome(t: Tx): boolean {
 export function sumAmt(arr: Tx[]): number {
   return arr.reduce((s, t) => s + Number(t.amount || 0), 0);
 }
+export interface CashInfo { withdrawn: number; income: number; expense: number; available: number; }
+// Efectivo disponible: lo retirado en cajeros (+ depósitos/ingresos en efectivo) menos lo gastado en efectivo.
+export function cashAvailable(tx: Tx[], cashAccountIds: Set<string>): CashInfo {
+  let withdrawn = 0, income = 0, expense = 0;
+  for (const t of tx) {
+    const amt = Number(t.amount || 0);
+    if (t.kind === "withdrawal") withdrawn += amt;
+    else if (isIncome(t) && t.account_id && cashAccountIds.has(t.account_id)) income += amt;
+    else if (isExpense(t) && t.account_id && cashAccountIds.has(t.account_id)) expense += amt;
+  }
+  return { withdrawn, income, expense, available: withdrawn + income - expense };
+}
 export function expenseByCategory(arr: Tx[]): Record<string, number> {
   const r: Record<string, number> = {};
   arr.filter(isExpense).forEach((t) => {

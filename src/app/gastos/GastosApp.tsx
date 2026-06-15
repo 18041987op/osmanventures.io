@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fmt, cap, isExpense, isIncome, sumAmt, expenseByCategory, expenseByMonth,
-  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory, computeBudget, computeAnt, antDefault,
+  MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory, computeBudget, computeAnt, antDefault, cashAvailable,
   type Profile, type Account, type Category, type Tx, type Palette, guessIncomeSource, INCOME_SOURCES} from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
 import AccountsView from "./AccountsView";
@@ -75,14 +75,13 @@ export default function GastosApp({ slug }: { slug: string }) {
       const ok = await loadData();
       if (!alive) return;
       if (ok) return;
-      // necesita login: traer nombre para mostrar
+      // necesita login: traer SOLO el nombre de este usuario (sin exponer la lista)
       try {
-        const r = await fetch("/api/gastos/users");
-        const j = await r.json();
-        const u = ((j.users as { slug: string; display_name: string | null }[]) || []).find((x) => x.slug === slug);
+        const r = await fetch(`/api/gastos/whoami?slug=${encodeURIComponent(slug)}`);
         if (!alive) return;
-        if (!u) { setPhase("notfound"); return; }
-        setLoginName(u.display_name || slug);
+        if (r.status === 404) { setPhase("notfound"); return; }
+        const j = await r.json();
+        setLoginName(j.display_name || slug);
       } catch {}
       if (alive) setPhase("login");
     })();
@@ -116,6 +115,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const availKeys = new Set(cats.map((c) => c.key));
   const target = isAdmin && scope !== "all" ? scope : undefined;
   const ownAccounts = target ? accounts.filter((a) => a.owner === target) : accounts;
+  const cashInfo = cashAvailable(tx, new Set(ownAccounts.filter((a) => a.kind === "cash").map((a) => a.id)));
   const ownCats = target ? cats.filter((c) => c.owner === target) : cats;
   const canEdit = !isAdmin || scope !== "all";
   async function excludeMerchant(merchant: string, label: string) {
@@ -420,6 +420,21 @@ export default function GastosApp({ slug }: { slug: string }) {
                 );
               })}
           </div>
+
+          {(cashInfo.withdrawn > 0 || cashInfo.expense > 0 || cashInfo.income > 0) && (
+            <div className="gx-panel">
+              <h3 className="gx-h">💵 Efectivo disponible</h3>
+              <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "2px 0 8px", color: cashInfo.available < 0 ? "var(--red)" : "var(--green)" }}>{fmt(cashInfo.available, cur)}</div>
+              <div className="gx-cashrow"><span>🏧 Retirado en cajeros</span><b>{fmt(cashInfo.withdrawn, cur)}</b></div>
+              {cashInfo.income > 0 && <div className="gx-cashrow"><span>➕ Depósitos / ingresos en efectivo</span><b>{fmt(cashInfo.income, cur)}</b></div>}
+              <div className="gx-cashrow"><span>➖ Gastado en efectivo</span><b>{fmt(cashInfo.expense, cur)}</b></div>
+              <p className="gx-hint" style={{ textAlign: "left", marginTop: 8 }}>
+                {cashInfo.available < 0
+                  ? "Has gastado en efectivo más de lo que retiraste. Revisa si falta registrar algún retiro o ingreso en efectivo."
+                  : "Es el efectivo que deberías tener a mano: lo que sacaste del banco menos lo que ya gastaste en efectivo."}
+              </p>
+            </div>
+          )}
 
           <div className="gx-panel">
             <button className="gx-collap" onClick={() => setRecentOpen((v) => !v)}>

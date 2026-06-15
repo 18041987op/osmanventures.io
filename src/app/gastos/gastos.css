@@ -127,3 +127,7 @@ input[type=color].gx-inp{height:44px;padding:4px}
 .gx .muted{ font-size: .92rem; }
 .gx-chev{ font-size: 1.5rem; }
 .gx-collap{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer;font-size:1.1rem;font-weight:600;color:var(--text);padding:0}
+
+.gx-cashrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.gx-cashrow:last-of-type{border-bottom:none}
+.gx-cashrow span{color:var(--muted)}
