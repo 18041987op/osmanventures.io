@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, antDefault, type Profile, type Palette } from "@/lib/gastos";
+import InstallCard from "./InstallCard";
 
 function resolveKey(p?: Palette | null) {
   if (p?.key && PALETTES[p.key]) return p.key;
@@ -69,6 +70,8 @@ export default function SettingsView({ profile, slug, isAdmin, onReload, onClose
   return (
     <div className="gx-view">
       <div className="gx-vh"><h2>Ajustes</h2><button className="gx-x" onClick={onClose} title="Cerrar">✕</button></div>
+
+      <InstallCard />
 
       <div className="gx-panel">
         <h3 className="gx-h">Perfil</h3>

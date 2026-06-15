@@ -140,6 +140,16 @@ export const DEFAULT_CATS: Record<string, CatDef[]> = {
   ],
 };
 
+export function guessIncomeSource(desc: string): string {
+  const d = (desc || "").toUpperCase();
+  if (/NOMINA|N[OÓ]MINA|PLANILLA|SALARIO|SUELDO|PAYROLL/.test(d)) return "payroll";
+  if (/DEP[OÓ]SITO\s*(EN\s*)?EFECTIVO|CASH\s*DEPOSIT|VENTANILLA|DEP EFECTIVO/.test(d)) return "deposit";
+  if (/TRANSFER|TRANSFERENCIA|ACH|SINPE|ENV[IÍ]O|WIRE|ZELLE|REMESA/.test(d)) return "transfer_in";
+  if (/REEMBOLSO|REFUND|DEVOLUC|REVERSO/.test(d)) return "refund";
+  if (/REGALO|GIFT|FAMILIA/.test(d)) return "gift";
+  if (/DEP[OÓ]SITO|DEPOSIT|ABONO|CR[EÉ]DITO/.test(d)) return "deposit";
+  return "other";
+}
 export const INCOME_SOURCES: Record<string, { label: string; emoji: string }> = {
   payroll:     { label: "Nómina", emoji: "💼" },
   transfer_in: { label: "Transferencia", emoji: "📲" },

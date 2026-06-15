@@ -3,8 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fmt, cap, isExpense, isIncome, sumAmt, expenseByCategory, expenseByMonth,
   MONTHS_ES, PALETTES, DEFAULT_PALETTE_KEY, OCCUPATIONS, KNOWN_CATS, guessCategory, computeBudget, computeAnt, antDefault,
-  type Profile, type Account, type Category, type Tx, type Palette,
-} from "@/lib/gastos";
+  type Profile, type Account, type Category, type Tx, type Palette, guessIncomeSource, INCOME_SOURCES} from "@/lib/gastos";
 import { DonutChart, BarChart } from "./Charts";
 import AccountsView from "./AccountsView";
 import EntryView from "./EntryView";
@@ -32,6 +31,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [fYear, setFYear] = useState<number | "all">("all");
   const [fMonth, setFMonth] = useState<string>("all");
   const [drillCat, setDrillCat] = useState<string | null>(null);
+  const [incDrill, setIncDrill] = useState(false);
   const [detail, setDetail] = useState<Tx | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [persons, setPersons] = useState<{ person: string; display_name: string | null; currency?: string | null; occupation?: string | null }[]>([]);
@@ -269,7 +269,7 @@ export default function GastosApp({ slug }: { slug: string }) {
           <>
           <div className="gx-cards">
             <div className="gx-c"><div className="ic" style={{ color: "var(--primary)" }}>💸</div><div className="v">{fmt(totalExp, cur)}</div><div className="l">Gastado</div></div>
-            <div className="gx-c"><div className="ic" style={{ color: "var(--accent)" }}>💰</div><div className="v">{fmt(totalInc, cur)}</div><div className="l">Ingresos</div></div>
+            <button className="gx-c" style={{ textAlign: "left", cursor: incomes.length ? "pointer" : "default" }} onClick={() => incomes.length && setIncDrill(true)}><div className="ic" style={{ color: "var(--accent)" }}>💰</div><div className="v">{fmt(totalInc, cur)}{incomes.length ? " ›" : ""}</div><div className="l">Ingresos</div></button>
             <div className="gx-c"><div className="ic">⚖️</div><div className="v" style={{ color: totalInc - totalExp >= 0 ? "var(--green)" : "var(--red)" }}>{fmt(totalInc - totalExp, cur)}</div><div className="l">Balance</div></div>
             <div className="gx-c"><div className="ic">🧾</div><div className="v">{filtered.length}</div><div className="l">Movimientos</div></div>
           </div>
@@ -420,6 +420,52 @@ export default function GastosApp({ slug }: { slug: string }) {
           </div>
         </div>
       )}
+
+      {incDrill && (() => {
+        const groups: Record<string, { total: number; items: Tx[] }> = {};
+        incomes.forEach((t) => {
+          const src = t.income_source || guessIncomeSource(t.original_description || t.description || "");
+          (groups[src] ||= { total: 0, items: [] });
+          groups[src].total += Number(t.amount || 0);
+          groups[src].items.push(t);
+        });
+        const entries = Object.entries(groups).sort((a, b) => b[1].total - a[1].total);
+        return (
+          <div className="gx-modal" onClick={() => setIncDrill(false)}>
+            <div className="gx-mcard" onClick={(ev) => ev.stopPropagation()}>
+              <div className="gx-mtop">
+                <div><h3>💰 Ingresos</h3><p className="muted">{fmt(totalInc, cur)} · {incomes.length} {incomes.length === 1 ? "ingreso" : "ingresos"}</p></div>
+                <button className="gx-x" onClick={() => setIncDrill(false)}>✕</button>
+              </div>
+              <div className="gx-mbody">
+                {entries.map(([src, g]) => {
+                  const meta = INCOME_SOURCES[src] || INCOME_SOURCES.other;
+                  return (
+                    <div key={src} style={{ marginBottom: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: ".95rem" }}>{meta.emoji} {meta.label}</span>
+                        <span style={{ fontWeight: 700, color: "var(--green)" }}>{fmt(g.total, cur)}</span>
+                      </div>
+                      <div style={{ fontSize: ".75rem", color: "var(--muted)", marginBottom: 6 }}>{Math.round((g.total / (totalInc || 1)) * 100)}% del total · {g.items.length} {g.items.length === 1 ? "movimiento" : "movimientos"}</div>
+                      {g.items.sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0)).map((t) => (
+                        <button key={String(t.id)} className="gx-tx" onClick={() => { setIncDrill(false); setDetail(t); }}>
+                          <span className="gx-ic" style={{ background: "var(--accent)22", color: "var(--accent)" }}>{meta.emoji}</span>
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span className="d">{t.original_description || t.description || meta.label}</span>
+                            <span className="s">{t.date || ""}{isAdmin && scope === "all" && t.person ? " · " + personName(t.person) : ""}{t.account_id ? " · " + acctName(t.account_id) : ""}</span>
+                          </span>
+                          <span className="a gx-pos">+{fmt(Number(t.amount || 0), cur)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })}
+                <p className="gx-hint">El tipo se detecta de la descripción del banco; puedes fijarlo al agregar un ingreso manual.</p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {antDrill && ant && ant.byCat[antDrill] && (
         <div className="gx-modal" onClick={() => setAntDrill(null)}>
