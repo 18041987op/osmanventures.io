@@ -115,7 +115,6 @@ export default function GastosApp({ slug }: { slug: string }) {
   const availKeys = new Set(cats.map((c) => c.key));
   const target = isAdmin && scope !== "all" ? scope : undefined;
   const ownAccounts = target ? accounts.filter((a) => a.owner === target) : accounts;
-  const cashInfo = cashAvailable(tx, new Set(ownAccounts.filter((a) => a.kind === "cash").map((a) => a.id)));
   const ownCats = target ? cats.filter((c) => c.owner === target) : cats;
   const canEdit = !isAdmin || scope !== "all";
   async function excludeMerchant(merchant: string, label: string) {
@@ -192,6 +191,10 @@ export default function GastosApp({ slug }: { slug: string }) {
 
   const expenses = filtered.filter(isExpense);
   const incomes = filtered.filter(isIncome);
+  const cashIds = new Set(ownAccounts.filter((a) => a.kind === "cash").map((a) => a.id));
+  const cashAll = cashAvailable(tx, cashIds);          // disponible real acumulado (todo el historial)
+  const cashPer = cashAvailable(filtered, cashIds);    // flujo del periodo filtrado
+  const cashFiltering = fYear !== "all";
   const totalExp = sumAmt(expenses);
   const totalInc = sumAmt(incomes);
   const byCat = expenseByCategory(expenses);
@@ -421,20 +424,36 @@ export default function GastosApp({ slug }: { slug: string }) {
               })}
           </div>
 
-          {(cashInfo.withdrawn > 0 || cashInfo.expense > 0 || cashInfo.income > 0) && (
-            <div className="gx-panel">
-              <h3 className="gx-h">💵 Efectivo disponible</h3>
-              <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "2px 0 8px", color: cashInfo.available < 0 ? "var(--red)" : "var(--green)" }}>{fmt(cashInfo.available, cur)}</div>
-              <div className="gx-cashrow"><span>🏧 Retirado en cajeros</span><b>{fmt(cashInfo.withdrawn, cur)}</b></div>
-              {cashInfo.income > 0 && <div className="gx-cashrow"><span>➕ Depósitos / ingresos en efectivo</span><b>{fmt(cashInfo.income, cur)}</b></div>}
-              <div className="gx-cashrow"><span>➖ Gastado en efectivo</span><b>{fmt(cashInfo.expense, cur)}</b></div>
-              <p className="gx-hint" style={{ textAlign: "left", marginTop: 8 }}>
-                {cashInfo.available < 0
-                  ? "Has gastado en efectivo más de lo que retiraste. Revisa si falta registrar algún retiro o ingreso en efectivo."
-                  : "Es el efectivo que deberías tener a mano: lo que sacaste del banco menos lo que ya gastaste en efectivo."}
-              </p>
-            </div>
-          )}
+          {(() => {
+            const c = cashFiltering ? cashPer : cashAll;
+            if (!(c.withdrawn > 0 || c.expense > 0 || c.income > 0 || cashAll.withdrawn > 0 || cashAll.expense > 0)) return null;
+            // hay "descontrol" si el periodo filtrado da negativo pero el acumulado real no
+            const desfase = cashFiltering && c.available < 0 && cashAll.available >= 0;
+            return (
+              <div className="gx-panel">
+                <h3 className="gx-h">💵 Efectivo {cashFiltering ? "del periodo" : "disponible"}</h3>
+                <div style={{ fontSize: "1.5rem", fontWeight: 800, margin: "2px 0 8px", color: c.available < 0 ? "var(--red)" : "var(--green)" }}>{fmt(c.available, cur)}</div>
+                <div className="gx-cashrow"><span>🏧 Retirado en cajeros</span><b>{fmt(c.withdrawn, cur)}</b></div>
+                {c.income > 0 && <div className="gx-cashrow"><span>➕ Depósitos / ingresos en efectivo</span><b>{fmt(c.income, cur)}</b></div>}
+                <div className="gx-cashrow"><span>➖ Gastado en efectivo</span><b>{fmt(c.expense, cur)}</b></div>
+                {cashFiltering && (
+                  <div className="gx-cashrow" style={{ borderTop: "1px solid var(--line)", marginTop: 4, paddingTop: 8 }}>
+                    <span>💵 Disponible real (todo el historial)</span>
+                    <b style={{ color: cashAll.available < 0 ? "var(--red)" : "var(--green)" }}>{fmt(cashAll.available, cur)}</b>
+                  </div>
+                )}
+                <p className="gx-hint" style={{ textAlign: "left", marginTop: 8 }}>
+                  {!cashFiltering
+                    ? "Es el efectivo que deberías tener a mano: lo que sacaste del banco menos lo que ya gastaste en efectivo."
+                    : desfase
+                      ? "⚠️ En este periodo gastaste más efectivo del que retiraste. Probablemente usaste efectivo retirado en otro mes — por eso el número del periodo es negativo. Tu disponible real acumulado se muestra arriba."
+                      : c.available < 0
+                        ? "Gastaste en efectivo más de lo retirado, incluso contando todo el historial. Revisa si falta registrar algún retiro o ingreso en efectivo."
+                        : "Movimiento de efectivo de este periodo. El “Disponible real” de arriba considera todo tu historial."}
+                </p>
+              </div>
+            );
+          })()}
 
           <div className="gx-panel">
             <button className="gx-collap" onClick={() => setRecentOpen((v) => !v)}>
