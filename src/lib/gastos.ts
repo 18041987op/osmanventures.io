@@ -257,12 +257,13 @@ export const KNOWN_CATS: Record<string, { label: string; emoji: string; color: s
 // Categorización automática por palabras clave (Honduras). Devuelve una clave estándar.
 export function guessCategory(desc: string): string {
   const d = (desc || "").toUpperCase();
-  if (/\bUBER\b|INDRIVE|\bYANGO\b|\bDIDI\b|\bTAXI\b|GASOLINA|COMBUSTIBLE|\bPUMA\b|TEXACO|TERPEL|DIPPSA|ASERVICENTRO|SERVICENTRO|ESTACION|PEAJE|PARQUEO|\bBUS\b|RENT A CAR|UNO\b/.test(d)) return "transporte";
-  if (/KENTUCKY|\bKFC\b|MC ?DONALD|BURGER|\bPIZZA\b|PIZZERIA|WENDY|POPEYE|LITTLE CAESAR|CAESAR|DOMINO|PAPA JOHN|MONSTER GRILL|\bGRILL\b|DELICIOUS|DENNY|BALEAD|CHURRASCO|ASADO|COMEDOR|\bPOLLO\b|CHICK|CHIKEN|\bTACO|SUSHI|RESTAURANT|FRIDAYS|SUBWAY|DUNKIN|FOOD|COMIDA|PEDIDOSYA|\bHUGO\b|ANTOJITOS|CARNES?/.test(d)) return "restaurante";
+  if (/\bUBER\b|INDRIVE|\bYANGO\b|\bDIDI\b|\bTAXI\b|GASOLINA|COMBUSTIBLE|\bPUMA\b|TEXACO|TERPEL|DIPPSA|ASERVICENTRO|SERVICENTRO|ESTACION|PEAJE|PARQUEO|\bBUS\b|RENT A CAR|UNO\b|\bSHELL\b|CHEVRON|EXXON|\bBP\b|MARATHON|CIRCLE K|\bLYFT\b|\bWAWA\b|SUNOCO|VALERO|SPEEDWAY/.test(d)) return "transporte";
+  if (/KENTUCKY|\bKFC\b|MC ?DONALD|BURGER|\bPIZZA\b|PIZZERIA|WENDY|POPEYE|LITTLE CAESAR|CAESAR|DOMINO|PAPA JOHN|MONSTER GRILL|\bGRILL\b|DELICIOUS|DENNY|BALEAD|CHURRASCO|ASADO|COMEDOR|\bPOLLO\b|CHICK|CHIKEN|\bTACO|SUSHI|RESTAURANT|FRIDAYS|SUBWAY|DUNKIN|STARBUCKS|CHIPOTLE|PANDA|TACO BELL|CHICK-?FIL|RAISING|WINGSTOP|DENNYS|IHOP|DOORDASH|GRUBHUB|UBER ?EATS|FOOD|COMIDA|PEDIDOSYA|\bHUGO\b|ANTOJITOS|CARNES?/.test(d)) return "restaurante";
   if (/UNICAFE|COFFEE|\bCAFE\b|STARBUCKS|ESPRESSO/.test(d)) return "cafeteria";
-  if (/SUPERMERCADO|\bSUPER\b|\bMAXI\b|PRICESMART|WAL ?MART|LA COLONIA|DESPENSA|ABARROTERIA|ABARROTES|CARNICERIA|PULPERIA|MERCADITO|MERCADO|JUNIOR|COMERCIAL|MINI ?SUPER|VERDURAS|FRUTAS/.test(d)) return "supermercado";
+  if (/SUPERMERCADO|\bSUPER\b|\bMAXI\b|PRICESMART|WAL ?MART|WALMART|\bTARGET\b|COSTCO|KROGER|SAFEWAY|PUBLIX|\bALDI\b|TRADER JOE|WHOLE FOODS|HARRIS TEETER|FOOD LION|LA COLONIA|DESPENSA|ABARROTERIA|ABARROTES|CARNICERIA|PULPERIA|MERCADITO|MERCADO|JUNIOR|COMERCIAL|MINI ?SUPER|VERDURAS|FRUTAS/.test(d)) return "supermercado";
   if (/\bTIGO\b|\bCLARO\b|HONDUTEL|RECARGA/.test(d)) return "telefono";
-  if (/SPOTIFY|NETFLIX|\bAPPLE\b|APPLEACOM|DISNEY|\bHBO\b|YOUTUBE|AMAZON|\bPRIME\b|GOOGLE|MICROSOFT|CANVA|ADOBE|OPENAI|CHATGPT/.test(d)) return "suscripcion";
+  if (/SPOTIFY|NETFLIX|\bAPPLE\b|APPLEACOM|DISNEY|\bHBO\b|YOUTUBE|\bPRIME\b|GOOGLE|MICROSOFT|CANVA|ADOBE|OPENAI|CHATGPT|PARAMOUNT|PEACOCK/.test(d)) return "suscripcion";
+  if (/\bAMZN\b|AMAZON/.test(d)) return "compras";
   if (/UNIVERSIDAD|\bUNAH\b|UNICAH|\bUTH\b|CEUTEC|COLEGIO|MATRICULA|TUITION|LIBRERIA|UTILES|PAPELERIA/.test(d)) return "universidad";
   if (/FARMACIA|KIELSA|HOSPITAL|CLINICA|LABORATORIO|MEDICO|DENTAL|OPTICA|\bSALUD\b/.test(d)) return "salud";
   if (/\bENEE\b|AGUAS|\bSANAA\b|\bCABLE\b|INTERNET/.test(d)) return "servicios";
@@ -270,3 +271,46 @@ export function guessCategory(desc: string): string {
   if (/\bZARA\b|DIUNSA|LA MODERNA|NUEVO MUNDO|CALZADO|PAYLESS|\bBATA\b|BAZAR|FOREVER|SIMAN|\bROPA\b/.test(d)) return "ropa";
   return "otros";
 }
+
+// Cobertura de categorías heredadas (app vieja: Arely en inglés, Teresa construcción)
+Object.assign(KNOWN_CATS, {
+  // Arely (hogar EE.UU.)
+  electricity:  { label: "Electricidad",   emoji: "⚡", color: "#D06B8D" },
+  water:        { label: "Agua",           emoji: "💧", color: "#42A5F5" },
+  gas:          { label: "Gas",            emoji: "🔥", color: "#FF7043" },
+  internet:     { label: "Internet/Cable", emoji: "📡", color: "#7E57C2" },
+  phone:        { label: "Teléfono",       emoji: "📱", color: "#26C6DA" },
+  rent:         { label: "Renta",          emoji: "🏠", color: "#8D6E63" },
+  maintenance:  { label: "Mantenimiento",  emoji: "🧹", color: "#78909C" },
+  groceries:    { label: "Supermercado",   emoji: "🛒", color: "#66BB6A" },
+  dining:       { label: "Restaurantes",   emoji: "🍽️", color: "#F7971E" },
+  transport:    { label: "Transporte",     emoji: "🚗", color: "#FFA726" },
+  insurance:    { label: "Seguros",        emoji: "🛡️", color: "#5C6BC0" },
+  sam:          { label: "Sam",            emoji: "🐾", color: "#F2A0BB" },
+  clothing:     { label: "Ropa",           emoji: "👗", color: "#AB47BC" },
+  entertainment:{ label: "Entretenimiento",emoji: "🎬", color: "#EC407A" },
+  streaming:    { label: "Streaming",      emoji: "📺", color: "#7B1FA2" },
+  taxes:        { label: "Impuestos",      emoji: "🏛️", color: "#B71C1C" },
+  investments:  { label: "Inversiones",    emoji: "📈", color: "#1565C0" },
+  mortgage_sav: { label: "Ahorro/Hipoteca",emoji: "🏦", color: "#2E7D32" },
+  remittance:   { label: "Remesas",        emoji: "💸", color: "#E65100" },
+  creditcard:   { label: "Tarjetas",       emoji: "💳", color: "#6A1B9A" },
+  bankfee:      { label: "Comisiones",     emoji: "🏧", color: "#37474F" },
+  cc_payment:   { label: "Pago TC",        emoji: "💳", color: "#B0BEC5" },
+  amazon:       { label: "Amazon",         emoji: "🛍️", color: "#FF6F00" },
+  other:        { label: "Otros",          emoji: "📦", color: "#90A4AE" },
+  // Teresa (construcción / Duplex Bendeck)
+  zinc:         { label: "Láminas Zinc",   emoji: "🪟", color: "#546E7A" },
+  escalera:     { label: "Escalera",       emoji: "🪜", color: "#607D8B" },
+  cemento:      { label: "Cemento",        emoji: "🧱", color: "#8D6E63" },
+  bloques:      { label: "Bloques",        emoji: "🔲", color: "#795548" },
+  combustible:  { label: "Combustible",    emoji: "⛽", color: "#F57C00" },
+  arena:        { label: "Arena",          emoji: "🏖️", color: "#F9A825" },
+  electricista: { label: "Electricista",   emoji: "⚡", color: "#FDD835" },
+  albanil:      { label: "Albañil",        emoji: "👷", color: "#FF8F00" },
+  pintura:      { label: "Pintura",        emoji: "🎨", color: "#AB47BC" },
+  herramientas: { label: "Herramientas",   emoji: "🔧", color: "#455A64" },
+  belleza:      { label: "Belleza",        emoji: "💄", color: "#D4709A" },
+  hogar:        { label: "Hogar",          emoji: "🏠", color: "#8D6E63" },
+  familia:      { label: "Familia",        emoji: "👪", color: "#F48FB1" },
+});
