@@ -131,3 +131,6 @@ input[type=color].gx-inp{height:44px;padding:4px}
 .gx-cashrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.9rem}
 .gx-cashrow:last-of-type{border-bottom:none}
 .gx-cashrow span{color:var(--muted)}
+
+.gx-cashpanel{border:2px solid var(--accent);box-shadow:0 4px 16px rgba(126,87,194,.18);background:linear-gradient(180deg,var(--primary-soft),var(--card) 60%)}
+.gx-cashpanel.warn{border-color:var(--red);box-shadow:0 4px 16px rgba(198,40,40,.18);background:linear-gradient(180deg,rgba(198,40,40,.10),var(--card) 60%)}
