@@ -56,7 +56,7 @@ export default function EntryView({ accounts, cats, tx, cur, onDone, onCancel }:
       </div>
 
       <div className="gx-panel">
-        {kind === "importar" ? <ImportPanel accounts={accounts} tx={tx} cur={cur} onDone={onDone} /> :
+        {kind === "importar" ? <ImportPanel accounts={accounts} cats={cats} tx={tx} cur={cur} onDone={onDone} /> :
          accounts.length === 0 ? <p className="muted">Primero crea una cuenta en la pestaña Cuentas.</p> : <>
           <label className="gx-lbl">Monto</label>
           <input className="gx-inp" type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />

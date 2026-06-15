@@ -99,6 +99,7 @@ export default function GastosApp({ slug }: { slug: string }) {
   const acctName = (id?: string | null) => accounts.find((a) => a.id === id)?.name || "";
   const personName = (p?: string | null) => persons.find((x) => x.person === p)?.display_name || p || "";
   const cur = profile?.currency;
+  const availKeys = new Set(cats.map((c) => c.key));
 
   async function setTxCategory(id: string | number, category: string) {
     const r = await fetch("/api/gastos/tx/category", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, category }) });
@@ -294,7 +295,7 @@ export default function GastosApp({ slug }: { slug: string }) {
               <div><h3>{catEmoji(drillCat)} {catLabel(drillCat)}</h3>
                 <p className="muted">{fmt(sumAmt(drillTx), cur)} · {drillTx.length} {drillTx.length === 1 ? "gasto" : "gastos"}</p></div>
               <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                {!isAdmin && drillCat === "otros" && <button className="gx-btn ghost sm" onClick={autoCategorize}>✨ Auto-categorizar</button>}
+                {!isAdmin && (drillCat === "otros" || drillCat === "other") && <button className="gx-btn ghost sm" onClick={autoCategorize}>✨ Auto-categorizar</button>}
                 <button className="gx-x" onClick={() => setDrillCat(null)}>✕</button>
               </span>
             </div>
@@ -325,7 +326,7 @@ export default function GastosApp({ slug }: { slug: string }) {
                       ...cats.filter((sb) => sb.parent_key === c.key).map((sb) => <option key={sb.key} value={sb.key}>&nbsp;&nbsp;↳ {sb.emoji} {sb.label}</option>),
                     ])}
                   </select>
-                  {(() => { const g = guessCategory(detail.original_description || detail.description || ""); return g !== "otros" && g !== detail.category ? (
+                  {(() => { const g = guessCategory(detail.original_description || detail.description || "", availKeys); return g !== "otros" && g !== "other" && g !== detail.category ? (
                     <button className="gx-btn ghost sm" style={{ marginTop: 8 }} onClick={() => setTxCategory(detail.id, g)}>Sugerencia: {catEmoji(g)} {catLabel(g)}</button>
                   ) : null; })()}
                 </div>

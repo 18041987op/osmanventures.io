@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { fmt, KNOWN_CATS, guessCategory, type Account, type Tx } from "@/lib/gastos";
+import { fmt, KNOWN_CATS, guessCategory, type Account, type Category, type Tx } from "@/lib/gastos";
 
 const MONTHS_ES = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -89,8 +89,9 @@ function key(date: string, amount: number, desc: string, acc: string) {
   return `${date}|${amount.toFixed(2)}|${(desc || "").toUpperCase().replace(/\s+/g, " ").trim()}|${acc}`;
 }
 
-export default function ImportPanel({ accounts, tx, cur, onDone }:
-  { accounts: Account[]; tx: Tx[]; cur?: string | null; onDone: () => void }) {
+export default function ImportPanel({ accounts, cats, tx, cur, onDone }:
+  { accounts: Account[]; cats: Category[]; tx: Tx[]; cur?: string | null; onDone: () => void }) {
+  const availKeys = new Set(cats.map((c) => c.key));
   const banks = accounts.filter((a) => a.kind !== "cash");
   const [account, setAccount] = useState((banks[0] || accounts[0])?.id || "");
   const [rows, setRows] = useState<Row[]>([]);
@@ -104,7 +105,7 @@ export default function ImportPanel({ accounts, tx, cur, onDone }:
     setFileName(f.name); setMsg("Leyendo…");
     const text = await readLatin1(f);
     setFileHash(await sha256hex(text));
-    const parsed = parseStatement(text);
+    const parsed = parseStatement(text).map((r) => r.kind === "withdrawal" || r.direction === "income" ? r : { ...r, category: guessCategory(r.original_description, availKeys), cat_label: KNOWN_CATS[guessCategory(r.original_description, availKeys)]?.label || r.cat_label });
     const existing = new Set(tx.filter((t) => t.account_id === account).map((t) => key(t.date || "", Number(t.amount || 0), t.original_description || t.description || "", t.account_id || "")));
     parsed.forEach((r) => { r._dup = existing.has(key(r.date, r.amount, r.original_description, account)); });
     setRows(parsed); setMsg("");

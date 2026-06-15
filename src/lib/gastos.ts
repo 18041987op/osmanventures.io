@@ -254,22 +254,47 @@ export const KNOWN_CATS: Record<string, { label: string; emoji: string; color: s
   return m;
 })();
 
-// Categorización automática por palabras clave (Honduras). Devuelve una clave estándar.
-export function guessCategory(desc: string): string {
+// Concepto canónico por palabras clave (HN + EE.UU.)
+export function guessConcept(desc: string): string {
   const d = (desc || "").toUpperCase();
-  if (/\bUBER\b|INDRIVE|\bYANGO\b|\bDIDI\b|\bTAXI\b|GASOLINA|COMBUSTIBLE|\bPUMA\b|TEXACO|TERPEL|DIPPSA|ASERVICENTRO|SERVICENTRO|ESTACION|PEAJE|PARQUEO|\bBUS\b|RENT A CAR|UNO\b|\bSHELL\b|CHEVRON|EXXON|\bBP\b|MARATHON|CIRCLE K|\bLYFT\b|\bWAWA\b|SUNOCO|VALERO|SPEEDWAY/.test(d)) return "transporte";
-  if (/KENTUCKY|\bKFC\b|MC ?DONALD|BURGER|\bPIZZA\b|PIZZERIA|WENDY|POPEYE|LITTLE CAESAR|CAESAR|DOMINO|PAPA JOHN|MONSTER GRILL|\bGRILL\b|DELICIOUS|DENNY|BALEAD|CHURRASCO|ASADO|COMEDOR|\bPOLLO\b|CHICK|CHIKEN|\bTACO|SUSHI|RESTAURANT|FRIDAYS|SUBWAY|DUNKIN|STARBUCKS|CHIPOTLE|PANDA|TACO BELL|CHICK-?FIL|RAISING|WINGSTOP|DENNYS|IHOP|DOORDASH|GRUBHUB|UBER ?EATS|FOOD|COMIDA|PEDIDOSYA|\bHUGO\b|ANTOJITOS|CARNES?/.test(d)) return "restaurante";
-  if (/UNICAFE|COFFEE|\bCAFE\b|STARBUCKS|ESPRESSO/.test(d)) return "cafeteria";
-  if (/SUPERMERCADO|\bSUPER\b|\bMAXI\b|PRICESMART|WAL ?MART|WALMART|\bTARGET\b|COSTCO|KROGER|SAFEWAY|PUBLIX|\bALDI\b|TRADER JOE|WHOLE FOODS|HARRIS TEETER|FOOD LION|LA COLONIA|DESPENSA|ABARROTERIA|ABARROTES|CARNICERIA|PULPERIA|MERCADITO|MERCADO|JUNIOR|COMERCIAL|MINI ?SUPER|VERDURAS|FRUTAS/.test(d)) return "supermercado";
-  if (/\bTIGO\b|\bCLARO\b|HONDUTEL|RECARGA/.test(d)) return "telefono";
-  if (/SPOTIFY|NETFLIX|\bAPPLE\b|APPLEACOM|DISNEY|\bHBO\b|YOUTUBE|\bPRIME\b|GOOGLE|MICROSOFT|CANVA|ADOBE|OPENAI|CHATGPT|PARAMOUNT|PEACOCK/.test(d)) return "suscripcion";
-  if (/\bAMZN\b|AMAZON/.test(d)) return "compras";
-  if (/UNIVERSIDAD|\bUNAH\b|UNICAH|\bUTH\b|CEUTEC|COLEGIO|MATRICULA|TUITION|LIBRERIA|UTILES|PAPELERIA/.test(d)) return "universidad";
-  if (/FARMACIA|KIELSA|HOSPITAL|CLINICA|LABORATORIO|MEDICO|DENTAL|OPTICA|\bSALUD\b/.test(d)) return "salud";
-  if (/\bENEE\b|AGUAS|\bSANAA\b|\bCABLE\b|INTERNET/.test(d)) return "servicios";
-  if (/CINE|CINEMARK|CINEPOLIS|MULTICINEMAS|TEATRO|BOLICHE/.test(d)) return "diversion";
-  if (/\bZARA\b|DIUNSA|LA MODERNA|NUEVO MUNDO|CALZADO|PAYLESS|\bBATA\b|BAZAR|FOREVER|SIMAN|\bROPA\b/.test(d)) return "ropa";
+  if (/UBER|INDRIVE|YANGO|DIDI|TAXI|GASOLINA|COMBUSTIBLE|PUMA|TEXACO|TERPEL|DIPPSA|ASERVICENTRO|SERVICENTRO|ESTACION|PEAJE|PARQUEO|BUS|RENT A CAR|UNO|SHELL|CHEVRON|EXXON|BP|MARATHON|CIRCLE K|LYFT|WAWA|SUNOCO|VALERO|SPEEDWAY/.test(d)) return "transport";
+  if (/UNICAFE|COFFEE|CAFE|STARBUCKS|ESPRESSO/.test(d)) return "cafe";
+  if (/KENTUCKY|KFC|MC ?DONALD|BURGER|PIZZA|PIZZERIA|WENDY|POPEYE|LITTLE CAESAR|CAESAR|DOMINO|PAPA JOHN|MONSTER GRILL|GRILL|DELICIOUS|DENNY|BALEAD|CHURRASCO|ASADO|COMEDOR|POLLO|CHICK|CHIKEN|TACO|SUSHI|RESTAURANT|FRIDAYS|SUBWAY|DUNKIN|CHIPOTLE|PANDA|TACO BELL|CHICK-?FIL|RAISING|WINGSTOP|DENNYS|IHOP|DOORDASH|GRUBHUB|UBER ?EATS|FOOD|COMIDA|PEDIDOSYA|HUGO|ANTOJITOS|CARNES?/.test(d)) return "restaurant";
+  if (/SUPERMERCADO|SUPER|MAXI|PRICESMART|WAL ?MART|WALMART|TARGET|COSTCO|KROGER|SAFEWAY|PUBLIX|ALDI|TRADER JOE|WHOLE FOODS|HARRIS TEETER|FOOD LION|LA COLONIA|DESPENSA|ABARROTERIA|ABARROTES|CARNICERIA|PULPERIA|MERCADITO|MERCADO|JUNIOR|COMERCIAL|MINI ?SUPER|VERDURAS|FRUTAS/.test(d)) return "groceries";
+  if (/TIGO|CLARO|HONDUTEL|RECARGA|AT&?T|VERIZON|T-?MOBILE/.test(d)) return "phone";
+  if (/SPOTIFY|NETFLIX|APPLE|APPLEACOM|DISNEY|HBO|YOUTUBE|PRIME|GOOGLE|MICROSOFT|CANVA|ADOBE|OPENAI|CHATGPT|PARAMOUNT|PEACOCK/.test(d)) return "subscription";
+  if (/AMZN|AMAZON|EBAY|ETSY|SHEIN|TEMU|MINISO|DOLLAR|ROSS|TJ ?MAXX|MARSHALLS|BEST BUY/.test(d)) return "shopping";
+  if (/UNIVERSIDAD|UNAH|UNICAH|UTH|CEUTEC|COLEGIO|MATRICULA|TUITION|LIBRERIA|UTILES|PAPELERIA/.test(d)) return "university";
+  if (/FARMACIA|KIELSA|HOSPITAL|CLINICA|LABORATORIO|MEDICO|DENTAL|OPTICA|SALUD|CVS|WALGREENS|PHARMACY/.test(d)) return "health";
+  if (/ENEE|AGUAS|SANAA|CABLE|INTERNET|DUKE|UTILITY|ELECTRIC|WATER/.test(d)) return "utilities";
+  if (/CINE|CINEMARK|CINEPOLIS|MULTICINEMAS|TEATRO|BOLICHE|AMC|REGAL/.test(d)) return "entertainment";
+  if (/ZARA|DIUNSA|LA MODERNA|NUEVO MUNDO|CALZADO|PAYLESS|BATA|BAZAR|FOREVER|SIMAN|H&?M|GAP|OLD NAVY|ROPA/.test(d)) return "clothing";
   return "otros";
+}
+
+// Cada concepto se resuelve a la clave que el usuario ya tenga (o la primera por defecto)
+const CONCEPT_KEYS: Record<string, string[]> = {
+  transport:    ["transporte", "transport"],
+  restaurant:   ["restaurante", "dining"],
+  cafe:         ["cafeteria", "restaurante", "dining"],
+  groceries:    ["supermercado", "groceries"],
+  phone:        ["telefono", "phone"],
+  subscription: ["suscripcion", "streaming"],
+  university:   ["universidad", "educacion"],
+  health:       ["salud", "health"],
+  utilities:    ["servicios", "electricity"],
+  entertainment:["diversion", "entertainment"],
+  clothing:     ["ropa", "clothing"],
+  shopping:     ["compras", "amazon", "otros", "other"],
+  otros:        ["otros", "other"],
+};
+export function resolveConceptKey(concept: string, available?: Set<string>): string {
+  const cands = CONCEPT_KEYS[concept] || ["otros"];
+  if (available) { for (const k of cands) if (available.has(k)) return k; }
+  return cands[0];
+}
+export function guessCategory(desc: string, available?: Set<string>): string {
+  return resolveConceptKey(guessConcept(desc), available);
 }
 
 // Cobertura de categorías heredadas (app vieja: Arely en inglés, Teresa construcción)
