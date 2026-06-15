@@ -339,3 +339,8 @@ Object.assign(KNOWN_CATS, {
   hogar:        { label: "Hogar",          emoji: "🏠", color: "#8D6E63" },
   familia:      { label: "Familia",        emoji: "👪", color: "#F48FB1" },
 });
+
+// Firma normalizada de un comercio para "memoria de categorías"
+export function merchantKey(desc: string): string {
+  return (desc || "").toUpperCase().replace(/[0-9]+/g, " ").replace(/[^A-Z ]/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+}
