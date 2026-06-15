@@ -6,8 +6,8 @@ const KINDS: Record<string, { label: string; emoji: string }> = {
   bank: { label: "Banco", emoji: "🏦" }, cash: { label: "Efectivo", emoji: "💵" }, credit: { label: "Tarjeta", emoji: "💳" },
 };
 
-export default function AccountsView({ accounts, tx, cur, person, onReload, onClose }:
-  { accounts: Account[]; tx: Tx[]; cur?: string | null; person?: string; onReload: () => void; onClose: () => void }) {
+export default function AccountsView({ accounts, archived = [], tx, cur, person, onReactivate, onReload, onClose }:
+  { accounts: Account[]; archived?: Account[]; tx: Tx[]; cur?: string | null; person?: string; onReactivate?: (id: string) => void; onReload: () => void; onClose: () => void }) {
   const [form, setForm] = useState<Partial<Account> | null>(null); // null = cerrado
 
   async function save() {
@@ -55,6 +55,24 @@ export default function AccountsView({ accounts, tx, cur, person, onReload, onCl
             </div>
           );
         })}
+
+      {archived.length > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <h3 className="gx-h" style={{ marginBottom: 8 }}>Archivadas</h3>
+          {archived.map((a) => {
+            const k = KINDS[a.kind] || KINDS.bank;
+            return (
+              <div key={a.id} className="gx-panel" style={{ padding: 12, opacity: .85 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span className="gx-ic" style={{ background: "#90A4AE22", color: "#90A4AE" }}>{k.emoji}</span>
+                  <span style={{ flex: 1, fontWeight: 600, fontSize: ".9rem" }}>{a.name}{a.bank ? <small className="muted"> · {a.bank}</small> : null}</span>
+                  {onReactivate && <button className="gx-btn ghost sm" onClick={() => onReactivate(a.id)}>Reactivar</button>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {form && (
         <div className="gx-modal" onClick={() => setForm(null)}>

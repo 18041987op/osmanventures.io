@@ -35,13 +35,22 @@ export async function GET(req: Request) {
         sb.from("categories").select("*").eq("archived", false),
       ]);
       let exclusions: { merchant: string; label: string | null }[] = [];
+      let archivedAccounts: unknown[] = [];
+      let archivedCategories: unknown[] = [];
       if (scope !== "all") {
-        const { data: ex } = await sb.from("ant_exclusions").select("merchant,label").eq("owner", scope);
+        const [{ data: ex }, { data: aAcc }, { data: aCat }] = await Promise.all([
+          sb.from("ant_exclusions").select("merchant,label").eq("owner", scope),
+          sb.from("accounts").select("*").eq("owner", scope).eq("archived", true),
+          sb.from("categories").select("*").eq("owner", scope).eq("archived", true),
+        ]);
         exclusions = ex || [];
+        archivedAccounts = aAcc || [];
+        archivedCategories = aCat || [];
       }
       return NextResponse.json({
         admin: true, scope, persons, profile: adminProfile,
         accounts: accounts || [], categories: cats || [], tx: tx || [], exclusions,
+        archivedAccounts, archivedCategories,
       });
     }
 
@@ -76,8 +85,12 @@ export async function GET(req: Request) {
     }
 
     categories.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-    const { data: ex } = await sb.from("ant_exclusions").select("merchant,label").eq("owner", person);
-    return NextResponse.json({ admin: false, profile, accounts: accountsList, categories, tx: tx || [], exclusions: ex || [] });
+    const [{ data: ex }, { data: aAcc }, { data: aCat }] = await Promise.all([
+      sb.from("ant_exclusions").select("merchant,label").eq("owner", person),
+      sb.from("accounts").select("*").eq("owner", person).eq("archived", true),
+      sb.from("categories").select("*").eq("owner", person).eq("archived", true),
+    ]);
+    return NextResponse.json({ admin: false, profile, accounts: accountsList, categories, tx: tx || [], exclusions: ex || [], archivedAccounts: aAcc || [], archivedCategories: aCat || [] });
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 });
   }

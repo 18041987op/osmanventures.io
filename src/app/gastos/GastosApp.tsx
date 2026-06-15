@@ -25,6 +25,10 @@ export default function GastosApp({ slug }: { slug: string }) {
   const [loginName, setLoginName] = useState<string>(slug);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
+  const [archAccounts, setArchAccounts] = useState<Account[]>([]);
+  const [archCats, setArchCats] = useState<Category[]>([]);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [recentOpen, setRecentOpen] = useState(false);
   const [tx, setTx] = useState<Tx[]>([]);
   const [pin, setPin] = useState("");
   const [err, setErr] = useState("");
@@ -56,6 +60,8 @@ export default function GastosApp({ slug }: { slug: string }) {
     const txList = (j.tx as Tx[]) || [];
     setTx(txList);
     setExclusions((j.exclusions as { merchant: string; label: string | null }[]) || []);
+    setArchAccounts((j.archivedAccounts as Account[]) || []);
+    setArchCats((j.archivedCategories as Category[]) || []);
     const years = Array.from(new Set(txList.map((t) => t.year).filter(Boolean))) as number[];
     years.sort((a, b) => b - a);
     setFYear(j.admin ? "all" : (years[0] ?? "all"));
@@ -131,6 +137,38 @@ export default function GastosApp({ slug }: { slug: string }) {
     setTx((prev) => prev.map((t) => (t.id === id ? { ...t, category } : t)));
     setDetail((d) => (d && d.id === id ? { ...d, category } : d));
   }
+  async function setTxNote(id: string | number, user_note: string) {
+    const person = isAdmin && scope !== "all" ? scope : undefined;
+    const note = user_note.trim();
+    const r = await fetch("/api/gastos/tx/note", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, user_note: note, person }) });
+    if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
+    setTx((prev) => prev.map((t) => (t.id === id ? { ...t, user_note: note || null } : t)));
+    setDetail((d) => (d && d.id === id ? { ...d, user_note: note || null } : d));
+  }
+  async function setArchived(kind: "account" | "category", idOrKey: string, archived: boolean) {
+    const person = isAdmin && scope !== "all" ? scope : undefined;
+    const url = kind === "account" ? "/api/gastos/account/archive" : "/api/gastos/category/archive";
+    const body = kind === "account" ? { id: idOrKey, archived, person } : { key: idOrKey, archived, person };
+    const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
+    await loadData(scope);
+  }
+  function exportCsv() {
+    const cell = (x: unknown) => { const v = x === null || x === undefined ? "" : String(x); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    const head = ["Fecha", "Año", "Mes", "Descripción", "Nota", "Categoría", "Cuenta", "Tipo", "Monto", "Moneda"];
+    const lines = [head.join(",")];
+    filtered.forEach((t) => {
+      const tipo = isIncome(t) ? "Ingreso" : t.kind === "withdrawal" ? "Retiro" : t.kind === "transfer" ? "Traspaso" : "Gasto";
+      const monto = (isIncome(t) ? "" : "-") + Number(t.amount || 0).toFixed(2);
+      lines.push([t.date || "", t.year || "", t.month_display || "", t.original_description || t.description || "", t.user_note || "", catLabel(t.category), acctName(t.account_id), tipo, monto, cur || ""].map(cell).join(","));
+    });
+    const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const who = isAdmin ? scope : slug;
+    a.download = `gastos-${who}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(a.href);
+  }
   async function autoCategorize() {
     const r = await fetch("/api/gastos/recategorize", { method: "POST" });
     if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
@@ -140,6 +178,7 @@ export default function GastosApp({ slug }: { slug: string }) {
     alert(`✨ ${j.changed} de ${j.total} reclasificados.`);
   }
 
+  useEffect(() => { setNoteDraft((detail?.user_note as string) || ""); }, [detail]);
   const years = useMemo(() => {
     const y = Array.from(new Set(tx.map((t) => t.year).filter(Boolean))) as number[];
     return y.sort((a, b) => b - a);
@@ -248,6 +287,7 @@ export default function GastosApp({ slug }: { slug: string }) {
               <option value="all">Todo el año</option>
               {months.map((m) => <option key={m} value={m}>{cap(m)}</option>)}
             </select>
+            {filtered.length > 0 && <button className="gx-btn ghost sm" style={{ flexShrink: 0 }} onClick={exportCsv} title="Descargar CSV (Excel)">⬇️ Exportar</button>}
           </div>
 
           {isAdmin && scope === "all" ? (
@@ -382,8 +422,15 @@ export default function GastosApp({ slug }: { slug: string }) {
           </div>
 
           <div className="gx-panel">
-            <h3 className="gx-h">Movimientos recientes</h3>
-            {filtered.length === 0 ? <p className="muted center">Sin movimientos.</p> : filtered.slice(0, 15).map(txRow)}
+            <button className="gx-collap" onClick={() => setRecentOpen((v) => !v)}>
+              <span>Movimientos recientes{filtered.length ? ` · ${filtered.length}` : ""}</span>
+              <span className="gx-chev">{recentOpen ? "▾" : "▸"}</span>
+            </button>
+            {recentOpen && (
+              <div style={{ marginTop: 10 }}>
+                {filtered.length === 0 ? <p className="muted center">Sin movimientos.</p> : filtered.slice(0, 30).map(txRow)}
+              </div>
+            )}
           </div>
 
           </>
@@ -391,9 +438,9 @@ export default function GastosApp({ slug }: { slug: string }) {
         </div>
         )}
 
-        {view === "cuentas" && <AccountsView accounts={ownAccounts} tx={tx} cur={cur} person={target} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
+        {view === "cuentas" && <AccountsView accounts={ownAccounts} archived={archAccounts} tx={tx} cur={cur} person={target} onReactivate={(id) => setArchived("account", id, false)} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
         {view === "agregar" && <EntryView accounts={ownAccounts} cats={ownCats} tx={tx} cur={cur} person={target} onDone={() => { void loadData(scope); setView("dashboard"); }} onCancel={() => setView("dashboard")} />}
-        {view === "categorias" && <CategoriesView cats={ownCats} tx={tx} cur={cur} person={target} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
+        {view === "categorias" && <CategoriesView cats={ownCats} archived={archCats} tx={tx} cur={cur} person={target} onReactivate={(key) => setArchived("category", key, false)} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
         {view === "ajustes" && profile && <SettingsView profile={profile} slug={slug} isAdmin={isAdmin} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} onPalette={(pl) => setProfile({ ...(profile as Profile), palette: pl })} />}
 
         <nav className="gx-nav">
@@ -533,7 +580,16 @@ export default function GastosApp({ slug }: { slug: string }) {
                 </div>
               )}
               {detail.account_id && <p style={{ fontSize: ".85rem" }}><b>Cuenta:</b> {acctName(detail.account_id)}</p>}
-              {detail.user_note && <p style={{ fontSize: ".85rem" }}><b>Nota:</b> {detail.user_note}</p>}
+              {canEdit ? (
+                <div style={{ marginTop: 12 }}>
+                  <label className="muted" style={{ fontSize: ".74rem" }}>Nota / detalle (no afecta lo del banco)</label>
+                  <textarea className="gx-inp" rows={2} style={{ resize: "vertical", marginTop: 4 }} value={noteDraft}
+                    placeholder="Ej. cena con la familia, gasto compartido, pendiente de reembolso…"
+                    onChange={(e) => setNoteDraft(e.target.value)} />
+                  <button className="gx-btn sm" style={{ marginTop: 8 }} disabled={noteDraft === ((detail.user_note as string) || "")}
+                    onClick={() => setTxNote(detail.id, noteDraft)}>Guardar nota</button>
+                </div>
+              ) : (detail.user_note && <p style={{ fontSize: ".85rem" }}><b>Nota:</b> {detail.user_note}</p>)}
             </div>
           </div>
         </div>

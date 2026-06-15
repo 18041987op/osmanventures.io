@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { fmt, similarity, isExpense, type Category, type Tx } from "@/lib/gastos";
 
-export default function CategoriesView({ cats, tx, cur, person, onReload, onClose }:
-  { cats: Category[]; tx: Tx[]; cur?: string | null; person?: string; onReload: () => void; onClose: () => void }) {
+export default function CategoriesView({ cats, archived = [], tx, cur, person, onReactivate, onReload, onClose }:
+  { cats: Category[]; archived?: Category[]; tx: Tx[]; cur?: string | null; person?: string; onReactivate?: (key: string) => void; onReload: () => void; onClose: () => void }) {
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState("");
   const [emoji, setEmoji] = useState("🏷️");
@@ -96,6 +96,21 @@ export default function CategoriesView({ cats, tx, cur, person, onReload, onClos
               <button className="gx-btn" style={{ marginTop: 14 }} onClick={() => create(null)}>Crear categoría</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {archived.length > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <h3 className="gx-h" style={{ marginBottom: 8 }}>Archivadas</h3>
+          {archived.map((c) => (
+            <div key={c.key} className="gx-panel" style={{ padding: 12, opacity: .85 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span className="gx-ic" style={{ background: (c.color || "#90A4AE") + "22", color: c.color || "#90A4AE" }}>{c.emoji}</span>
+                <span style={{ flex: 1, fontWeight: 600, fontSize: ".9rem" }}>{c.label}{c.parent_key ? <small className="muted"> · subcategoría</small> : null}</span>
+                {onReactivate && <button className="gx-btn ghost sm" onClick={() => onReactivate(c.key)}>Reactivar</button>}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
