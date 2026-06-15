@@ -100,6 +100,10 @@ export default function GastosApp({ slug }: { slug: string }) {
   const personName = (p?: string | null) => persons.find((x) => x.person === p)?.display_name || p || "";
   const cur = isAdmin ? (scope !== "all" ? persons.find((p) => p.person === scope)?.currency : profile?.currency) : profile?.currency;
   const availKeys = new Set(cats.map((c) => c.key));
+  const target = isAdmin && scope !== "all" ? scope : undefined;
+  const ownAccounts = target ? accounts.filter((a) => a.owner === target) : accounts;
+  const ownCats = target ? cats.filter((c) => c.owner === target) : cats;
+  const canEdit = !isAdmin || scope !== "all";
 
   async function setTxCategory(id: string | number, category: string) {
     const r = await fetch("/api/gastos/tx/category", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, category }) });
@@ -186,7 +190,7 @@ export default function GastosApp({ slug }: { slug: string }) {
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span className="d">{t.description || t.original_description || "(sin descripción)"}</span>
-          <span className="s">{t.date || ""}{isAdmin && scope === "all" && t.person ? " · " + personName(t.person) : ""}{t.account_id ? " · " + acctName(t.account_id) : ""}{t.user_note ? " · 📝" : ""}</span>
+          <span className="s">{t.date || ""}{isAdmin && scope === "all" && t.person ? " · " + personName(t.person) : ""}{t.account_id ? " · " + acctName(t.account_id) : ""}{t.user_note ? " · 📝" : ""}{t.added_by === "admin" ? " · 🛠️" : ""}</span>
         </span>
         <span className={"a " + (inc ? "gx-pos" : "")}>{inc ? "+" : "-"}{fmt(t.amount, cur)}</span>
       </button>
@@ -201,7 +205,7 @@ export default function GastosApp({ slug }: { slug: string }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {isAdmin && (
               <select className="gx-sel" style={{ maxWidth: 160 }} value={scope}
-                onChange={(e) => { setScope(e.target.value); void loadData(e.target.value); }}>
+                onChange={(e) => { const v = e.target.value; setScope(v); if (v === "all") setView("dashboard"); void loadData(v); }}>
                 <option value="all">Todos</option>
                 {persons.map((p) => <option key={p.person} value={p.person}>{p.display_name || p.person}</option>)}
               </select>
@@ -298,16 +302,16 @@ export default function GastosApp({ slug }: { slug: string }) {
         </div>
         )}
 
-        {view === "cuentas" && <AccountsView accounts={accounts} tx={tx} cur={cur} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
-        {view === "agregar" && <EntryView accounts={accounts} cats={cats} tx={tx} cur={cur} onDone={() => { void loadData(scope); setView("dashboard"); }} onCancel={() => setView("dashboard")} />}
-        {view === "categorias" && <CategoriesView cats={cats} tx={tx} cur={cur} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
-        {view === "ajustes" && profile && <SettingsView profile={profile} slug={slug} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} onPalette={(pl) => setProfile({ ...(profile as Profile), palette: pl })} />}
+        {view === "cuentas" && <AccountsView accounts={ownAccounts} tx={tx} cur={cur} person={target} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
+        {view === "agregar" && <EntryView accounts={ownAccounts} cats={ownCats} tx={tx} cur={cur} person={target} onDone={() => { void loadData(scope); setView("dashboard"); }} onCancel={() => setView("dashboard")} />}
+        {view === "categorias" && <CategoriesView cats={ownCats} tx={tx} cur={cur} person={target} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} />}
+        {view === "ajustes" && profile && <SettingsView profile={profile} slug={slug} isAdmin={isAdmin} onReload={() => loadData(scope)} onClose={() => setView("dashboard")} onPalette={(pl) => setProfile({ ...(profile as Profile), palette: pl })} />}
 
         <nav className="gx-nav">
           <button className={"gx-navbtn" + (view === "dashboard" ? " on" : "")} onClick={() => setView("dashboard")}><span>📊</span>Inicio</button>
-          {!isAdmin && <button className={"gx-navbtn" + (view === "cuentas" ? " on" : "")} onClick={() => setView("cuentas")}><span>🏦</span>Cuentas</button>}
-          {!isAdmin && <button className="gx-fab" onClick={() => setView("agregar")} title="Agregar">+</button>}
-          {!isAdmin && <button className={"gx-navbtn" + (view === "categorias" ? " on" : "")} onClick={() => setView("categorias")}><span>🏷️</span>Categorías</button>}
+          {canEdit && <button className={"gx-navbtn" + (view === "cuentas" ? " on" : "")} onClick={() => setView("cuentas")}><span>🏦</span>Cuentas</button>}
+          {canEdit && <button className="gx-fab" onClick={() => setView("agregar")} title="Agregar">+</button>}
+          {canEdit && <button className={"gx-navbtn" + (view === "categorias" ? " on" : "")} onClick={() => setView("categorias")}><span>🏷️</span>Categorías</button>}
           <button className={"gx-navbtn" + (view === "ajustes" ? " on" : "")} onClick={() => setView("ajustes")}><span>⚙️</span>Ajustes</button>
         </nav>
       </div>
@@ -336,6 +340,7 @@ export default function GastosApp({ slug }: { slug: string }) {
               <div style={{ fontSize: "1.6rem", fontWeight: 800, textAlign: "center", margin: "6px 0 14px", color: isIncome(detail) ? "var(--green)" : "var(--text)" }}>
                 {isIncome(detail) ? "+" : "-"}{fmt(detail.amount, cur)}
               </div>
+              {detail.added_by === "admin" && <div style={{ textAlign: "center", marginBottom: 8 }}><span style={{ background: "var(--primary-soft)", color: "var(--primary)", borderRadius: 20, padding: "3px 10px", fontSize: ".78rem", fontWeight: 600 }}>🛠️ Agregado por Admin</span></div>}
               <label className="muted" style={{ fontSize: ".74rem" }}>Del estado de cuenta (no editable)</label>
               <div className="gx-locked">{detail.original_description || detail.description || "—"}</div>
               <p style={{ marginTop: 10, fontSize: ".85rem" }}><b>Fecha:</b> {detail.date || "—"}</p>

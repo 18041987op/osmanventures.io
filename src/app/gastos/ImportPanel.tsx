@@ -89,8 +89,8 @@ function key(date: string, amount: number, desc: string, acc: string) {
   return `${date}|${amount.toFixed(2)}|${(desc || "").toUpperCase().replace(/\s+/g, " ").trim()}|${acc}`;
 }
 
-export default function ImportPanel({ accounts, cats, tx, cur, onDone }:
-  { accounts: Account[]; cats: Category[]; tx: Tx[]; cur?: string | null; onDone: () => void }) {
+export default function ImportPanel({ accounts, cats, tx, cur, person, onDone }:
+  { accounts: Account[]; cats: Category[]; tx: Tx[]; cur?: string | null; person?: string; onDone: () => void }) {
   const availKeys = new Set(cats.map((c) => c.key));
   const banks = accounts.filter((a) => a.kind !== "cash");
   const [account, setAccount] = useState((banks[0] || accounts[0])?.id || "");
@@ -120,7 +120,7 @@ export default function ImportPanel({ accounts, cats, tx, cur, onDone }:
     setBusy(true);
     const r = await fetch("/api/gastos/import", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ account_id: account, file_hash: fileHash, filename: fileName, rows: sel }),
+      body: JSON.stringify({ account_id: account, file_hash: fileHash, filename: fileName, rows: sel, person }),
     });
     setBusy(false);
     if (!r.ok) { alert("Error al importar: " + (await r.json()).error); return; }

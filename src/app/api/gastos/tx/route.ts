@@ -4,17 +4,10 @@ import { MONTHS_ES } from "@/lib/gastos";
 
 type Body = {
   kind: "expense" | "income" | "withdrawal" | "transfer";
-  amount: number;
-  date: string;            // YYYY-MM-DD
-  account_id: string;
-  transfer_account_id?: string;
-  category?: string;
-  subcategory?: string;
-  cat_label?: string;
-  description?: string;
-  user_note?: string;
-  income_source?: string;
-  source_note?: string;
+  amount: number; date: string; account_id: string; transfer_account_id?: string;
+  category?: string; subcategory?: string; cat_label?: string;
+  description?: string; user_note?: string; income_source?: string; source_note?: string;
+  person?: string; // solo admin
 };
 
 function dateParts(ymd: string) {
@@ -29,24 +22,29 @@ function dateParts(ymd: string) {
 export async function POST(req: Request) {
   try {
     const s = await currentSession();
-    if (!s || s.person === "admin") return NextResponse.json({ error: "no-auth" }, { status: 401 });
+    if (!s) return NextResponse.json({ error: "no-auth" }, { status: 401 });
     const b = (await req.json()) as Body;
+    const isAdmin = s.person === "admin";
+    const owner = isAdmin ? b.person : s.person;
+    if (!owner) return NextResponse.json({ error: "Falta usuario destino" }, { status: 400 });
+    const addedBy = isAdmin ? "admin" : null;
+
     const amount = Number(b.amount);
     if (!(amount > 0)) return NextResponse.json({ error: "Monto inválido" }, { status: 400 });
     if (!b.account_id) return NextResponse.json({ error: "Cuenta requerida" }, { status: 400 });
 
-    // Verificar que la cuenta es del usuario y derivar un "type" válido (bank/cash)
-    const { data: acc } = await svc().from("accounts").select("kind,owner").eq("id", b.account_id).maybeSingle();
-    if (!acc || acc.owner !== s.person) return NextResponse.json({ error: "Cuenta inválida" }, { status: 400 });
+    const sb = svc();
+    const { data: acc } = await sb.from("accounts").select("kind,owner").eq("id", b.account_id).maybeSingle();
+    if (!acc || acc.owner !== owner) return NextResponse.json({ error: "Cuenta inválida" }, { status: 400 });
     const txType = acc.kind === "cash" ? "cash" : "bank";
 
     const dp = dateParts(b.date);
     const desc = (b.description || "").trim();
     const base = {
-      person: s.person, amount, ...dp, account_id: b.account_id,
+      person: owner, amount, ...dp, account_id: b.account_id,
       description: desc || (b.cat_label || "Movimiento"),
       original_description: desc || (b.cat_label || "Movimiento"),
-      user_note: b.user_note || null, type: txType, has_receipt: false,
+      user_note: b.user_note || null, type: txType, has_receipt: false, added_by: addedBy,
     };
 
     let row: Record<string, unknown>;
@@ -69,10 +67,8 @@ export async function POST(req: Request) {
         direction: "transfer", kind: "transfer", counts_as_expense: false };
     }
 
-    const { error } = await svc().from("transactions").insert(row);
+    const { error } = await sb.from("transactions").insert(row);
     if (error) throw error;
     return NextResponse.json({ ok: true });
-  } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
-  }
+  } catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 500 }); }
 }

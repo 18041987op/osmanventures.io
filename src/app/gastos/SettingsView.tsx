@@ -8,8 +8,8 @@ function resolveKey(p?: Palette | null) {
   return DEFAULT_PALETTE_KEY;
 }
 
-export default function SettingsView({ profile, slug, onReload, onClose, onPalette }:
-  { profile: Profile; slug: string; onReload: () => void; onClose: () => void; onPalette: (p: Palette) => void }) {
+export default function SettingsView({ profile, slug, isAdmin, onReload, onClose, onPalette }:
+  { profile: Profile; slug: string; isAdmin?: boolean; onReload: () => void; onClose: () => void; onPalette: (p: Palette) => void }) {
   const [name, setName] = useState(profile.display_name || "");
   const [occ, setOcc] = useState(profile.occupation || "otro");
   const [currency, setCurrency] = useState(profile.currency || "HNL");
@@ -18,6 +18,20 @@ export default function SettingsView({ profile, slug, onReload, onClose, onPalet
   const [primary, setPrimary] = useState(profile.palette?.primary || PALETTES[resolveKey(profile.palette)]?.primary || "#5C6BC0");
   const [accent, setAccent] = useState(profile.palette?.accent || PALETTES[resolveKey(profile.palette)]?.accent || "#7E57C2");
   const curKey = resolveKey(profile.palette);
+  const [nuSlug, setNuSlug] = useState("");
+  const [nuName, setNuName] = useState("");
+  const [nuOcc, setNuOcc] = useState("otro");
+  const [nuCur, setNuCur] = useState("HNL");
+  const [nuPin, setNuPin] = useState("");
+  async function createUser() {
+    if (!nuSlug.trim() || !/^\d{4}$/.test(nuPin)) { alert("Usuario y PIN (4 dígitos) requeridos."); return; }
+    const r = await fetch("/api/gastos/admin/users", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slug: nuSlug, display_name: nuName, occupation: nuOcc, currency: nuCur, pin: nuPin }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { alert("Error: " + (j.error || r.status)); return; }
+    setNuSlug(""); setNuName(""); setNuPin("");
+    alert("Usuario creado. Abre /gastos/" + (j.slug || nuSlug));
+  }
 
   async function post(url: string, body: object) {
     const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
@@ -96,6 +110,30 @@ export default function SettingsView({ profile, slug, onReload, onClose, onPalet
         <input className="gx-inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={pin} onChange={(e) => setPin(e.target.value)} />
         <button className="gx-btn sm" style={{ marginTop: 8, display: "block" }} onClick={savePin}>Cambiar PIN</button>
       </div>
+
+      {isAdmin && (
+        <div className="gx-panel">
+          <h3 className="gx-h">Crear usuario</h3>
+          <label className="gx-lbl">Usuario (URL)</label>
+          <input className="gx-inp" value={nuSlug} placeholder="ej. fernanda" onChange={(e) => setNuSlug(e.target.value)} />
+          <label className="gx-lbl">Nombre a mostrar</label>
+          <input className="gx-inp" value={nuName} placeholder="ej. Fernanda" onChange={(e) => setNuName(e.target.value)} />
+          <div className="gx-row2">
+            <div><label className="gx-lbl">Ocupación</label>
+              <select className="gx-inp" value={nuOcc} onChange={(e) => setNuOcc(e.target.value)}>
+                {Object.entries(OCCUPATIONS).map(([k, o]) => <option key={k} value={k}>{o.emoji} {o.label}</option>)}
+              </select></div>
+            <div><label className="gx-lbl">Moneda</label>
+              <select className="gx-inp" value={nuCur} onChange={(e) => setNuCur(e.target.value)}>
+                <option value="HNL">Lempira (L)</option><option value="USD">Dólar ($)</option>
+                <option value="EUR">Euro (€)</option><option value="GTQ">Quetzal (Q)</option><option value="MXN">Peso MX ($)</option>
+              </select></div>
+          </div>
+          <label className="gx-lbl">PIN (4 dígitos)</label>
+          <input className="gx-inp" type="password" inputMode="numeric" maxLength={4} placeholder="••••" value={nuPin} onChange={(e) => setNuPin(e.target.value)} />
+          <button className="gx-btn" style={{ marginTop: 14 }} onClick={createUser}>Crear usuario</button>
+        </div>
+      )}
     </div>
   );
 }

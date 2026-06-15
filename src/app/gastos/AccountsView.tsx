@@ -6,15 +6,15 @@ const KINDS: Record<string, { label: string; emoji: string }> = {
   bank: { label: "Banco", emoji: "🏦" }, cash: { label: "Efectivo", emoji: "💵" }, credit: { label: "Tarjeta", emoji: "💳" },
 };
 
-export default function AccountsView({ accounts, tx, cur, onReload, onClose }:
-  { accounts: Account[]; tx: Tx[]; cur?: string | null; onReload: () => void; onClose: () => void }) {
+export default function AccountsView({ accounts, tx, cur, person, onReload, onClose }:
+  { accounts: Account[]; tx: Tx[]; cur?: string | null; person?: string; onReload: () => void; onClose: () => void }) {
   const [form, setForm] = useState<Partial<Account> | null>(null); // null = cerrado
 
   async function save() {
     if (!form?.name?.trim()) { alert("Ponle un nombre."); return; }
     const r = await fetch("/api/gastos/account", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: form.id, name: form.name, bank: form.bank, kind: form.kind || "bank", color: form.color || "#5C6BC0" }),
+      body: JSON.stringify({ id: form.id, name: form.name, bank: form.bank, kind: form.kind || "bank", color: form.color || "#5C6BC0", person }),
     });
     if (!r.ok) { alert("No se pudo guardar: " + (await r.json()).error); return; }
     setForm(null); onReload();
@@ -22,7 +22,7 @@ export default function AccountsView({ accounts, tx, cur, onReload, onClose }:
   async function archive(id: string) {
     if (!confirm("¿Archivar esta cuenta? No se borran sus movimientos.")) return;
     const r = await fetch("/api/gastos/account/archive", {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }),
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id, person }),
     });
     if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
     onReload();

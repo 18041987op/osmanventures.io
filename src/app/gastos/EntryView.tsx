@@ -8,8 +8,8 @@ const TABS: [Kind | "importar", string][] = [
   ["expense", "💸 Gasto"], ["income", "💰 Ingreso"], ["withdrawal", "🏧 Retiro"], ["transfer", "🔁 Traspaso"], ["importar", "📄 Importar"],
 ];
 
-export default function EntryView({ accounts, cats, tx, cur, onDone, onCancel }:
-  { accounts: Account[]; cats: Category[]; tx: Tx[]; cur?: string | null; onDone: () => void; onCancel: () => void }) {
+export default function EntryView({ accounts, cats, tx, cur, person, onDone, onCancel }:
+  { accounts: Account[]; cats: Category[]; tx: Tx[]; cur?: string | null; person?: string; onDone: () => void; onCancel: () => void }) {
   const [kind, setKind] = useState<Kind | "importar">("expense");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -31,6 +31,7 @@ export default function EntryView({ accounts, cats, tx, cur, onDone, onCancel }:
     const amt = parseFloat(amount);
     if (!(amt > 0)) { alert("Escribe un monto válido."); return; }
     const body: Record<string, unknown> = { kind, amount: amt, date, account_id: account };
+    if (person) body.person = person;
     if (kind === "expense") {
       const parent = cats.find((c) => c.key === cat)?.parent_key;
       body.category = parent || cat; body.subcategory = parent ? cat : undefined;
@@ -56,7 +57,7 @@ export default function EntryView({ accounts, cats, tx, cur, onDone, onCancel }:
       </div>
 
       <div className="gx-panel">
-        {kind === "importar" ? <ImportPanel accounts={accounts} cats={cats} tx={tx} cur={cur} onDone={onDone} /> :
+        {kind === "importar" ? <ImportPanel accounts={accounts} cats={cats} tx={tx} cur={cur} person={person} onDone={onDone} /> :
          accounts.length === 0 ? <p className="muted">Primero crea una cuenta en la pestaña Cuentas.</p> : <>
           <label className="gx-lbl">Monto</label>
           <input className="gx-inp" type="number" inputMode="decimal" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />

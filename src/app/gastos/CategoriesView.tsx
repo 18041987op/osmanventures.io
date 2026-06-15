@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { fmt, similarity, isExpense, type Category, type Tx } from "@/lib/gastos";
 
-export default function CategoriesView({ cats, tx, cur, onReload, onClose }:
-  { cats: Category[]; tx: Tx[]; cur?: string | null; onReload: () => void; onClose: () => void }) {
+export default function CategoriesView({ cats, tx, cur, person, onReload, onClose }:
+  { cats: Category[]; tx: Tx[]; cur?: string | null; person?: string; onReload: () => void; onClose: () => void }) {
   const [open, setOpen] = useState(false);
   const [label, setLabel] = useState("");
   const [emoji, setEmoji] = useState("🏷️");
@@ -28,7 +28,7 @@ export default function CategoriesView({ cats, tx, cur, onReload, onClose }:
     if (!label.trim()) { alert("Escribe un nombre."); return; }
     const r = await fetch("/api/gastos/category", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label, emoji, color, parent_key: parentKey }),
+      body: JSON.stringify({ label, emoji, color, parent_key: parentKey, person }),
     });
     if (!r.ok) { alert("No se pudo crear: " + (await r.json()).error); return; }
     setOpen(false); setLabel(""); setEmoji("🏷️"); setColor("#5C6BC0"); onReload();
@@ -36,7 +36,7 @@ export default function CategoriesView({ cats, tx, cur, onReload, onClose }:
   async function archive(key: string) {
     if (!confirm("¿Archivar esta categoría? No se borran los gastos; solo deja de mostrarse para clasificar.")) return;
     const r = await fetch("/api/gastos/category/archive", {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key }),
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key, person }),
     });
     if (!r.ok) { alert("Error: " + (await r.json()).error); return; }
     onReload();

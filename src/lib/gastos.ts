@@ -65,6 +65,7 @@ export interface Tx {
   income_source?: string | null;
   source_note?: string | null;
   has_receipt?: boolean | null;
+  added_by?: string | null;
 }
 
 // ── Paletas ─────────────────────────────────────────────────────

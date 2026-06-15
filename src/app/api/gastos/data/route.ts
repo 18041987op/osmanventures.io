@@ -4,7 +4,7 @@ import { svc, readSession, SESSION_COOKIE } from "@/lib/gastosServer";
 import { DEFAULT_CATS, type Category, type Account } from "@/lib/gastos";
 
 const TX_COLS =
-  "id,date,description,original_description,user_note,category,subcategory,cat_label,month,month_display,month_num,year,amount,type,person,direction,kind,counts_as_expense,account_id,transfer_account_id,income_source,source_note,has_receipt";
+  "id,date,description,original_description,user_note,category,subcategory,cat_label,month,month_display,month_num,year,amount,type,person,direction,kind,counts_as_expense,account_id,transfer_account_id,income_source,source_note,has_receipt,added_by";
 
 export async function GET(req: Request) {
   try {
