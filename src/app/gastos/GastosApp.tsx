@@ -52,7 +52,7 @@ export default function GastosApp({ slug }: { slug: string }) {
     setTx(txList);
     const years = Array.from(new Set(txList.map((t) => t.year).filter(Boolean))) as number[];
     years.sort((a, b) => b - a);
-    setFYear(years[0] ?? "all");
+    setFYear(j.admin ? "all" : (years[0] ?? "all"));
     setPhase("app");
     return true;
   }, [slug]);
