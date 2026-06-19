@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Remodelación Dúplex · El Progreso, Yoro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ─── PIN gate con 2 roles ───
+   1987 → dueño  (acceso total)
+   2026 → contratista (solo registra avance + sube fotos) */
+(function(){
+  var OWNER_PIN = "1987";
+  var CONTRACTOR_PIN = "2026";
+  var KEY = "duplex_role_v2";
+  if(sessionStorage.getItem(KEY)) return;
+  document.write(
+    '<div id="pin-gate" style="position:fixed;inset:0;z-index:99999;background:#2d4f29;'+
+    'display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif">'+
+    '<form id="pin-form" style="background:#fffdf8;padding:32px 28px;border-radius:16px;'+
+    'box-shadow:0 20px 60px rgba(0,0,0,.3);width:300px;text-align:center">'+
+    '<div style="font-size:36px;margin-bottom:8px">🔒</div>'+
+    '<h2 style="margin:0 0 6px;font-family:Georgia,serif;color:#1f2421;font-size:20px">Acceso restringido</h2>'+
+    '<p style="margin:0 0 18px;font-size:13px;color:#5b6159">Ingresa tu PIN.</p>'+
+    '<input id="pin-input" type="password" inputmode="numeric" autocomplete="off" autofocus '+
+    'style="width:100%;padding:12px;border:1px solid #e0dccf;border-radius:10px;'+
+    'font-size:18px;text-align:center;letter-spacing:.3em;font-family:inherit">'+
+    '<div id="pin-err" style="color:#a8473a;font-size:12px;height:16px;margin-top:6px"></div>'+
+    '<button type="submit" style="width:100%;margin-top:6px;padding:12px;border:none;'+
+    'border-radius:10px;background:#3f6b3a;color:#fff;font-size:15px;font-weight:600;cursor:pointer">Entrar</button>'+
+    '</form></div>'
+  );
+  document.addEventListener("DOMContentLoaded", function(){
+    var form = document.getElementById("pin-form");
+    var input = document.getElementById("pin-input");
+    var err = document.getElementById("pin-err");
+    var gate = document.getElementById("pin-gate");
+    document.body.style.overflow = "hidden";
+    form.addEventListener("submit", function(e){
+      e.preventDefault();
+      var v = input.value.trim();
+      if(v === OWNER_PIN){
+        sessionStorage.setItem(KEY, "owner");
+        gate.remove(); document.body.style.overflow = "";
+        if(window.__onRoleReady) window.__onRoleReady();
+      } else if(v === CONTRACTOR_PIN){
+        sessionStorage.setItem(KEY, "contractor");
+        gate.remove(); document.body.style.overflow = "";
+        if(window.__onRoleReady) window.__onRoleReady();
+      } else {
+        err.textContent = "PIN incorrecto";
+        input.value = ""; input.focus();
+      }
+    });
+  });
+})();
+</script>
+<style>
+  :root{
+    --bg:#f4f1ea;
+    --panel:#fffdf8;
+    --ink:#1f2421;
+    --ink-soft:#5b6159;
+    --line:#e0dccf;
+    --green:#3f6b3a;
+    --green-deep:#2d4f29;
+    --green-soft:#e8efe3;
+    --clay:#bf6b3f;
+    --gold:#c9a24b;
+    --blue:#3a5a78;
+    --red:#a8473a;
+    --shadow:0 1px 2px rgba(31,36,33,.04),0 8px 24px rgba(31,36,33,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;-webkit-font-smoothing:antialiased}
+  body{padding:0 0 80px}
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:600;letter-spacing:-.01em}
+
+  header{
+    background:var(--green-deep);
+    color:#f4f1ea;
+    padding:34px 24px 30px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;
+    border-radius:50%;background:radial-gradient(circle,rgba(201,162,75,.22),transparent 70%);
+  }
+  .head-wrap{max-width:1120px;margin:0 auto;position:relative;z-index:2}
+  .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  header h1{font-size:clamp(26px,4vw,40px);margin:8px 0 6px;color:#fff}
+  header p{color:#c3cdbd;font-size:15px;max-width:560px}
+  .head-meta{
+    margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  }
+  .save-tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12.5px;color:#aebfa6;background:rgba(255,255,255,.06);
+    padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08)
+  }
+  .save-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+  .save-tag.sync .dot{background:#7ed987;animation:pulse 1.4s infinite}
+  .save-tag.err .dot{background:#ff8a73}
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+  .role-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:12.5px;font-weight:600;
+    padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.07);color:#f4f1ea;cursor:pointer
+  }
+  .role-tag.owner{color:#ffe9a8}
+  .role-tag.contractor{color:#bde7b3}
+
+  main{max-width:1120px;margin:0 auto;padding:0 24px}
+
+  .kpis{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+    margin-top:-30px;position:relative;z-index:5
+  }
+  .kpi{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:18px 18px 16px;box-shadow:var(--shadow)
+  }
+  .kpi .label{font-size:11.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-soft);font-weight:600}
+  .kpi .value{font-family:'Fraunces',serif;font-size:25px;font-weight:600;margin-top:8px;line-height:1.1}
+  .kpi .sub{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+  .kpi.accent-green .value{color:var(--green)}
+  .kpi.accent-clay .value{color:var(--clay)}
+  .kpi.accent-blue .value{color:var(--blue)}
+
+  section{margin-top:34px}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .sec-head h2{font-size:21px}
+  .sec-head .hint{font-size:13px;color:var(--ink-soft)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+
+  .pay-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+  .pay-box{padding:22px}
+  .pay-box h3{font-size:16px;margin-bottom:14px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px}
+  .field input,.field textarea{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;
+    font-family:'Outfit',sans-serif;font-size:15px;background:#fff;color:var(--ink)
+  }
+  .field textarea{min-height:72px;resize:vertical}
+  .field input:focus,.field textarea:focus{outline:2px solid var(--green-soft);border-color:var(--green)}
+  .btn{
+    border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-weight:600;
+    font-size:14px;padding:11px 18px;cursor:pointer;transition:transform .08s,filter .15s
+  }
+  .btn:active{transform:scale(.97)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-green{background:var(--green);color:#fff}
+  .btn-green:hover{filter:brightness(1.08)}
+  .btn-ghost{background:transparent;color:var(--green);border:1px solid var(--green)}
+  .btn-sm{font-size:12.5px;padding:7px 12px}
+  .btn-danger{background:transparent;color:var(--red);border:1px solid #e3c9c4}
+
+  .balance-visual{display:flex;flex-direction:column;gap:14px}
+  .bar-track{height:30px;border-radius:8px;background:var(--green-soft);overflow:hidden;display:flex}
+  .bar-fill{background:linear-gradient(90deg,var(--green),var(--green-deep));height:100%;transition:width .5s ease}
+  .bar-legend{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-soft)}
+  .mini-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mini{background:var(--green-soft);border-radius:12px;padding:13px 14px}
+  .mini .l{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--green-deep);font-weight:600}
+  .mini .v{font-family:'Fraunces',serif;font-size:19px;font-weight:600;margin-top:3px;color:var(--green-deep)}
+
+  .alert{
+    margin-top:6px;font-size:12.5px;padding:9px 12px;border-radius:9px;
+    background:#f6e7e4;color:var(--red);border:1px solid #e3c9c4;display:none
+  }
+  .alert.show{display:block}
+
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .chart-card{padding:20px}
+  .chart-card h3{font-size:15px;margin-bottom:6px}
+  .chart-card .csub{font-size:12px;color:var(--ink-soft);margin-bottom:12px}
+  .chart-wrap{position:relative;height:230px}
+
+  .group{margin-bottom:16px;overflow:hidden}
+  .group-head{
+    display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;
+    background:var(--green-soft);border-bottom:1px solid var(--line)
+  }
+  .group-head .gicon{
+    width:34px;height:34px;border-radius:9px;background:var(--green);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;flex-shrink:0
+  }
+  .group-head .gtitle{flex:1}
+  .group-head .gtitle .gt{font-family:'Fraunces',serif;font-size:16px;font-weight:600}
+  .group-head .gtitle .gd{font-size:12px;color:var(--ink-soft)}
+  .group-head .gtotals{text-align:right;font-size:12.5px}
+  .group-head .gtotals .gt-pay{font-family:'Fraunces',serif;font-size:16px;font-weight:600;color:var(--green-deep)}
+  .group-head .gtotals .gt-lbl{color:var(--ink-soft)}
+  .chevron{transition:transform .25s;color:var(--green-deep);font-size:13px}
+  .group.collapsed .chevron{transform:rotate(-90deg)}
+  .group.collapsed .group-body{display:none}
+
+  .item{
+    display:grid;grid-template-columns:1fr 130px 170px 120px;gap:14px;
+    padding:14px 20px;border-bottom:1px solid var(--line);align-items:start
+  }
+  .item:last-child{border-bottom:none}
+  .item .iname{font-size:13.5px;line-height:1.35;padding-top:4px}
+  .item .iname .icode{font-size:11px;color:var(--ink-soft);font-weight:600;display:block;margin-top:2px}
+  .item .icost{font-size:13.5px;font-weight:600;text-align:right;padding-top:4px}
+  .item .icost .ic-lbl{display:block;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .prog-cell{display:flex;flex-direction:column;gap:5px}
+  .prog-cell .ptop{display:flex;justify-content:space-between;font-size:12px}
+  .prog-cell .pval{font-weight:700;color:var(--green)}
+  .prog-cell .updated{font-size:10.5px;color:var(--ink-soft);margin-top:2px}
+  .prog-cell .row-actions{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+  .prog-cell .row-actions button{
+    background:none;border:1px solid var(--line);border-radius:7px;padding:3px 9px;
+    font-size:11px;font-family:inherit;cursor:pointer;color:var(--ink-soft);font-weight:500
+  }
+  .prog-cell .row-actions button:hover{background:#f4f1ea;border-color:var(--green)}
+  .prog-cell .row-actions button.has-imgs{color:var(--green);border-color:var(--green)}
+  .slider{
+    -webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:5px;
+    background:var(--line);outline:none
+  }
+  .slider::-webkit-slider-thumb{
+    -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:var(--green);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)
+  }
+  .slider::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;background:var(--green);
+    cursor:pointer;border:3px solid #fff
+  }
+  .slider:disabled{opacity:.4;cursor:not-allowed}
+  .item .ipay{text-align:right;padding-top:4px}
+  .item .ipay .amt{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--green-deep)}
+  .item .ipay .ip-lbl{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  .done-check{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);margin-top:5px;cursor:pointer}
+  .done-check input{accent-color:var(--green);width:14px;height:14px}
+
+  .item-head-row{
+    display:grid;grid-template-columns:1fr 130px 170px 120px;gap:14px;
+    padding:9px 20px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-soft);font-weight:600;background:#faf8f1;border-bottom:1px solid var(--line)
+  }
+  .item-head-row span:nth-child(2),.item-head-row span:nth-child(4){text-align:right}
+
+  /* expanded log/images panel under an item */
+  .item-detail{
+    grid-column:1/-1;background:#faf8f1;padding:14px 20px;border-top:1px solid var(--line);
+    margin:8px -20px -14px;
+  }
+  .item-detail h4{font-family:'Fraunces',serif;font-size:13px;margin-bottom:10px;color:var(--green-deep)}
+  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-bottom:14px}
+  .img-grid .thumb{
+    aspect-ratio:1;background:var(--line) center/cover no-repeat;border-radius:8px;cursor:pointer;
+    border:1px solid var(--line);position:relative
+  }
+  .img-grid .thumb:hover{filter:brightness(.92)}
+  .log-list{display:flex;flex-direction:column;gap:8px}
+  .log-entry{
+    background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 12px;
+    font-size:12.5px;display:flex;gap:10px;align-items:flex-start
+  }
+  .log-entry .lbadge{
+    font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 7px;border-radius:5px;flex-shrink:0
+  }
+  .lbadge.owner{background:#f6efd9;color:#8a6d1f}
+  .lbadge.contractor{background:#e8efe3;color:var(--green-deep)}
+  .log-entry .ltext{flex:1;line-height:1.4}
+  .log-entry .lwhen{color:var(--ink-soft);font-size:11px}
+  .log-entry .lnote{margin-top:3px;color:var(--ink-soft);font-style:italic}
+
+  /* EDIT MODE */
+  .edit-input{
+    width:90px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;
+    font-family:'Outfit',sans-serif;font-size:13px;text-align:right
+  }
+  .editable-name{
+    width:100%;padding:5px 7px;border:1px solid var(--line);border-radius:7px;
+    font-family:'Outfit',sans-serif;font-size:13px
+  }
+  body:not(.edit-mode) .edit-only{display:none!important}
+  body.edit-mode .view-only{display:none!important}
+  body.edit-mode .item{grid-template-columns:1fr 130px 60px}
+  body.edit-mode .item-head-row{grid-template-columns:1fr 130px 60px}
+  body.edit-mode .group-body .slider,body.edit-mode .done-check{pointer-events:none;opacity:.4}
+
+  /* CONTRACTOR ROLE: hide owner-only controls */
+  body.role-contractor .owner-only{display:none!important}
+  body.role-contractor .edit-input,
+  body.role-contractor .editable-name,
+  body.role-contractor #proj-start,
+  body.role-contractor #proj-end{pointer-events:none;background:#faf8f1;color:var(--ink-soft)}
+
+  .add-item-row{padding:12px 20px;background:#faf8f1}
+
+  /* Trabajos del contrato base (con slider y weight) */
+  .task-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .task-row{
+    background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 12px;
+    font-size:12.5px;line-height:1.3;display:flex;flex-direction:column;gap:6px
+  }
+  .task-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .task-name{flex:1;min-width:0}
+  .task-name b{color:var(--ink-soft);font-weight:600;margin-right:6px}
+  .task-meta{font-size:11px;color:var(--ink-soft);text-align:right;flex-shrink:0;white-space:nowrap}
+  .task-meta .t-prog-val{font-weight:700;color:var(--green-deep);font-size:13px;margin-left:3px}
+  .t-slider{margin-top:2px}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+  .sched-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .sched-box{padding:20px}
+  .sched-box h3{font-size:15px;margin-bottom:14px}
+  .dates-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .timeline-stat{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .timeline-stat:last-child{border-bottom:none}
+  .timeline-stat .ts-v{font-weight:700}
+  .ts-v.green{color:var(--green)}
+  .ts-v.clay{color:var(--clay)}
+  .ts-v.red{color:var(--red)}
+
+  footer{max-width:1120px;margin:40px auto 0;padding:22px 24px;border-top:1px solid var(--line);color:var(--ink-soft);font-size:12.5px}
+  footer b{color:var(--ink)}
+
+  .pill{display:inline-block;font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
+  .pill-green{background:var(--green-soft);color:var(--green-deep)}
+
+  /* MODAL */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(31,36,33,.55);backdrop-filter:blur(3px);
+    display:none;align-items:center;justify-content:center;z-index:5000;padding:18px
+  }
+  .modal-backdrop.show{display:flex}
+  .modal{
+    background:var(--panel);border-radius:18px;width:100%;max-width:480px;max-height:90vh;
+    overflow:auto;box-shadow:0 30px 80px rgba(0,0,0,.4)
+  }
+  .modal-head{padding:20px 22px 12px;border-bottom:1px solid var(--line)}
+  .modal-head h3{font-family:'Fraunces',serif;font-size:18px;color:var(--green-deep)}
+  .modal-head .mh-sub{font-size:13px;color:var(--ink-soft);margin-top:4px}
+  .modal-body{padding:18px 22px}
+  .modal-foot{padding:14px 22px 18px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line)}
+  .prog-preview{
+    display:flex;gap:14px;align-items:center;justify-content:center;
+    padding:14px;background:var(--green-soft);border-radius:12px;margin-bottom:16px
+  }
+  .prog-preview .ppold,.prog-preview .ppnew{
+    font-family:'Fraunces',serif;font-size:28px;font-weight:600
+  }
+  .prog-preview .ppold{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:#bbb}
+  .prog-preview .ppnew{color:var(--green-deep)}
+  .prog-preview .pparrow{font-size:22px;color:var(--green)}
+  .file-drop{
+    background:var(--green-soft);border:none;border-radius:10px;padding:14px 16px;
+    text-align:center;color:var(--green-deep);font-size:13.5px;font-weight:600;
+    cursor:pointer;display:block;margin-bottom:14px;transition:filter .15s
+  }
+  .file-drop:hover{filter:brightness(.96)}
+  .file-drop input{display:none}
+  .file-drop-sm{padding:11px 14px;font-size:12.5px;margin:0 0 14px}
+  .file-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px;margin-bottom:14px}
+  .file-preview .fp{
+    aspect-ratio:1;background:#eee center/cover no-repeat;border-radius:7px;position:relative
+  }
+  .file-preview .fp button{
+    position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:none;
+    background:rgba(31,36,33,.7);color:#fff;font-size:12px;cursor:pointer;line-height:1
+  }
+  .upload-spin{display:none;color:var(--ink-soft);font-size:12px;margin-top:8px;text-align:center}
+  .upload-spin.show{display:block}
+
+  /* IMG VIEWER */
+  .viewer{
+    position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;
+    align-items:center;justify-content:center;z-index:6000;cursor:zoom-out
+  }
+  .viewer.show{display:flex}
+  .viewer img{max-width:95vw;max-height:90vh;border-radius:8px}
+  .viewer .vclose{
+    position:absolute;top:20px;right:20px;color:#fff;background:rgba(255,255,255,.15);
+    border:none;border-radius:50%;width:38px;height:38px;font-size:18px;cursor:pointer
+  }
+
+  @media(max-width:860px){
+    .kpis{grid-template-columns:1fr 1fr}
+    .pay-grid,.charts,.sched-grid{grid-template-columns:1fr}
+    .item,.item-head-row{grid-template-columns:1fr 100px 110px;gap:10px}
+    .item .ipay,.item-head-row span:nth-child(4){grid-column:2/4;text-align:right}
+    body.edit-mode .item,body.edit-mode .item-head-row{grid-template-columns:1fr 100px 50px}
+    .item-head-row span:nth-child(3){display:none}
+    .prog-cell{grid-column:1/4}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-wrap">
+    <div class="eyebrow">Control de Obra · Pago por Avance</div>
+    <h1>Remodelación Dúplex</h1>
+    <p>El Progreso, Yoro · Honduras. Seguimiento de avance del contratista, cálculo automático de pagos y línea de tiempo del proyecto.</p>
+    <div class="head-meta">
+      <span class="save-tag" id="sync-tag"><span class="dot"></span> <span id="sync-text">Cargando…</span></span>
+      <span class="role-tag" id="role-tag" onclick="logout()" title="Cerrar sesión"></span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- KPI STRIP -->
+  <div class="kpis">
+    <div class="kpi accent-green">
+      <div class="label">Avance de obra</div>
+      <div class="value" id="kpi-progress">0%</div>
+      <div class="sub" id="kpi-progress-sub">ponderado por costo</div>
+    </div>
+    <div class="kpi accent-blue">
+      <div class="label">Pago ganado</div>
+      <div class="value" id="kpi-earned">L 0</div>
+      <div class="sub">según avance actual</div>
+    </div>
+    <div class="kpi accent-clay">
+      <div class="label">Pagado al contratista</div>
+      <div class="value" id="kpi-paid">L 0</div>
+      <div class="sub" id="kpi-paid-sub">0 pagos registrados</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Presupuesto total</div>
+      <div class="value" id="kpi-total">L 0</div>
+      <div class="sub" id="kpi-total-sub">3 grupos de obra</div>
+    </div>
+  </div>
+
+  <!-- PAYMENT PANEL -->
+  <section>
+    <div class="sec-head">
+      <h2>Estado de Pagos</h2>
+      <span class="hint">Registra cada pago. El "saldo a pagar hoy" es el dinero que el avance ya justifica.</span>
+    </div>
+    <div class="card pay-grid">
+      <div class="pay-box" style="border-right:1px solid var(--line)">
+        <h3 id="pay-h3">Registrar un pago</h3>
+        <div class="owner-only">
+          <div class="field">
+            <label>Monto del pago (Lempiras)</label>
+            <input type="number" id="pay-amount" placeholder="Ej: 50000" min="0">
+          </div>
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" id="pay-date">
+          </div>
+          <div class="field">
+            <label>Nota (opcional)</label>
+            <input type="text" id="pay-note" placeholder="Ej: Anticipo, pago por terminar electricidad...">
+          </div>
+          <button class="btn btn-green" onclick="addPayment()" style="width:100%">+ Agregar pago</button>
+        </div>
+        <div id="pay-list" style="margin-top:16px"></div>
+      </div>
+
+      <div class="pay-box">
+        <h3>Resumen financiero</h3>
+        <div class="balance-visual">
+          <div>
+            <div class="bar-legend" style="margin-bottom:5px">
+              <span>Pagado <b id="bal-paid-pct">0%</b></span>
+              <span>Restante <b id="bal-rest-pct">100%</b></span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" id="bal-bar" style="width:0%"></div></div>
+          </div>
+          <div class="mini-stats">
+            <div class="mini">
+              <div class="l">Saldo a pagar hoy</div>
+              <div class="v" id="bal-due-now">L 0</div>
+            </div>
+            <div class="mini">
+              <div class="l">Falta por pagar (total)</div>
+              <div class="v" id="bal-remaining">L 0</div>
+            </div>
+            <div class="mini">
+              <div class="l">Total pagado</div>
+              <div class="v" id="bal-paid">L 0</div>
+            </div>
+            <div class="mini">
+              <div class="l">Pago ganado por avance</div>
+              <div class="v" id="bal-earned">L 0</div>
+            </div>
+          </div>
+          <div class="alert" id="overpay-alert"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHARTS -->
+  <section>
+    <div class="sec-head"><h2>Visualización</h2><span class="hint">Lectura rápida del progreso y los pagos.</span></div>
+    <div class="charts">
+      <div class="card chart-card">
+        <h3>Pagado vs. Ganado vs. Presupuesto</h3>
+        <div class="csub">Compara lo que ya pagaste contra lo que el avance justifica y el total.</div>
+        <div class="chart-wrap"><canvas id="chartMoney"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>Avance por grupo de obra</h3>
+        <div class="csub">Qué tan completo está cada grupo de partidas.</div>
+        <div class="chart-wrap"><canvas id="chartGroups"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCHEDULE -->
+  <section>
+    <div class="sec-head"><h2>Tiempo del Proyecto</h2><span class="hint">Define fechas para ver el avance esperado vs. el real.</span></div>
+    <div class="sched-grid">
+      <div class="card sched-box">
+        <h3>Fechas del proyecto</h3>
+        <div class="dates-row">
+          <div class="field" style="margin:0">
+            <label>Fecha de inicio</label>
+            <input type="date" id="proj-start">
+          </div>
+          <div class="field" style="margin:0">
+            <label>Fecha estimada de fin</label>
+            <input type="date" id="proj-end">
+          </div>
+        </div>
+        <div style="margin-top:8px">
+          <div class="bar-legend" style="margin-bottom:5px">
+            <span>Tiempo transcurrido <b id="time-pct">0%</b></span>
+            <span>Obra avanzada <b id="time-progress">0%</b></span>
+          </div>
+          <div class="bar-track" style="background:#ece8db">
+            <div class="bar-fill" id="time-bar" style="width:0%;background:linear-gradient(90deg,var(--blue),#2c4257)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card sched-box">
+        <h3>Indicadores de tiempo</h3>
+        <div class="timeline-stat"><span>Duración total estimada</span><span class="ts-v" id="ts-total">—</span></div>
+        <div class="timeline-stat"><span>Días transcurridos</span><span class="ts-v" id="ts-elapsed">—</span></div>
+        <div class="timeline-stat"><span>Días restantes</span><span class="ts-v" id="ts-left">—</span></div>
+        <div class="timeline-stat"><span>Estado del proyecto</span><span class="ts-v" id="ts-status">—</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BUDGET -->
+  <section>
+    <div class="sec-head">
+      <h2>Presupuesto y Avance Detallado</h2>
+      <div class="toolbar owner-only">
+        <button class="btn btn-ghost btn-sm" id="editToggle" onclick="toggleEdit()">✎ Editar presupuesto</button>
+      </div>
+    </div>
+    <div id="groups-container"></div>
+  </section>
+
+  <footer>
+    <p><b>Cómo funciona el pago por avance:</b> cada partida tiene un costo. Cuando se marca al, por ejemplo, 60%, el sistema calcula que el contratista ha "ganado" el 60% del costo de esa partida. La suma de todo eso es el <b>pago ganado</b>. El <b>saldo a pagar hoy</b> es el pago ganado menos lo que ya se pagó.</p>
+    <p style="margin-top:10px">El presupuesto base proviene del PDF del contratista. Cada cambio de avance queda registrado con fecha, autor y opcionalmente fotos en el historial de la partida.</p>
+  </footer>
+
+</main>
+
+<!-- ─── Modal: confirmar cambio de avance ─── -->
+<div class="modal-backdrop" id="prog-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="pm-title">Actualizar avance</h3>
+      <div class="mh-sub" id="pm-sub"></div>
+    </div>
+    <div class="modal-body">
+      <div class="prog-preview">
+        <div class="ppold" id="pm-old">0%</div>
+        <div class="pparrow">→</div>
+        <div class="ppnew" id="pm-new">0%</div>
+      </div>
+      <label class="file-drop" id="pm-drop">
+        <input type="file" id="pm-files" accept="image/*" multiple>
+        📷 Tomar fotos o adjuntar imágenes
+        <div style="font-size:11px;font-weight:400;margin-top:3px;opacity:.75">Puedes subir varias · opcional · máx 5 MB c/u</div>
+      </label>
+      <div class="file-preview" id="pm-preview"></div>
+      <div class="field" style="margin:0">
+        <label>Comentario (opcional)</label>
+        <textarea id="pm-note" placeholder="Ej: terminé de instalar 12 tomacorrientes, faltan 13..."></textarea>
+      </div>
+      <div class="upload-spin" id="pm-spin">Guardando y subiendo fotos…</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeProgModal()">Cancelar</button>
+      <button class="btn btn-green" id="pm-confirm" onclick="confirmProg()">Confirmar avance</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Image viewer ─── -->
+<div class="viewer" id="viewer" onclick="closeViewer(event)">
+  <button class="vclose" onclick="closeViewer(event)">✕</button>
+  <img id="viewer-img" src="">
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SUPABASE_URL      = 'https://ozfmydiutupboupttkmz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_TcG2qZdwO5PQuJAJ701xtg_XArHPpsG';
+const BUCKET            = 'duplex-progress';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let ROLE = sessionStorage.getItem('duplex_role_v2'); // 'owner' | 'contractor'
+
+/* ============================================================
+   DATOS BASE (solo para sembrar Supabase la primera vez)
+   ============================================================ */
+const DEFAULT_DATA = {
+  groups:[
+    {
+      id:"base", code:"A", name:"Contrato Base (PDF Gómez & Rivera)",
+      desc:"Remodelación completa · L 392,500 · pago 50% entrada + 30% al 80% avance + 20% al cierre",
+      items:[
+        {id:"base_main", code:"★", name:"Contrato base completo · 30 trabajos", cost:392500, tasks:[
+          {id:"t01", code:"1",  name:"Instalación de 25 unidades de tomacorrientes 120v",                       weight:17125},
+          {id:"t02", code:"2",  name:"Instalación de 6 unidades de tomacorrientes de 220v",                      weight:5010},
+          {id:"t03", code:"3",  name:"Instalación de 14 spot light (sala/comedor/cocina/baños/lavandería/porch/lateral)", weight:9100},
+          {id:"t04", code:"4",  name:"Instalar 1 ventilador de techo de 52\"",                                   weight:4375},
+          {id:"t05", code:"5",  name:"Instalación de panel eléctrico",                                           weight:11000},
+          {id:"t06", code:"6",  name:"Cambiar cable de acometida",                                               weight:4000},
+          {id:"t07", code:"7",  name:"Reparación de tubería sanitaria y potable",                                weight:5870},
+          {id:"t08", code:"8",  name:"Instalación de 2 duchas",                                                  weight:2200},
+          {id:"t09", code:"9",  name:"Instalación de 2 sanitarios",                                              weight:8500},
+          {id:"t10", code:"10", name:"Enchapar con cerámica área de ducha (8.64 m² altura 2.10)",                weight:7214},
+          {id:"t11", code:"11", name:"Fundir plancha de concreto para lavadora y secadora",                      weight:4500},
+          {id:"t12", code:"12", name:"Hacer acera peatonal de 0.10 cm total 40.79 ml",                           weight:18954},
+          {id:"t13", code:"13", name:"Subir pared divisoria de lavandería 2.20 m, repellar y pulir",             weight:2600},
+          {id:"t14", code:"14", name:"Demoler cocina",                                                            weight:900},
+          {id:"t15", code:"15", name:"Instalar cielo falso con tablilla PVC blanco 72 m²",                       weight:56160},
+          {id:"t16", code:"16", name:"Hacer mueble de lavatrastes interior de cedro con MDF",                    weight:36000},
+          {id:"t17", code:"17", name:"Instalación lavatrasto completo",                                          weight:4500},
+          {id:"t18", code:"18", name:"Instalar top de porcelánica (granito básico)",                             weight:16500},
+          {id:"t19", code:"19", name:"Hacer torre de alacena 7 pies de alto (no incluye mueble aéreo)",          weight:22000},
+          {id:"t20", code:"20", name:"Hacer cerca de separación con rejilla color verde de 1.50 m de altura",    weight:20154},
+          {id:"t21", code:"21", name:"Hacer portón corredizo con portón peatonal incluido",                      weight:28552},
+          {id:"t22", code:"22", name:"Rellenar con selecto área frontal de terreno",                             weight:17200},
+          {id:"t23", code:"23", name:"Cambiar ventanas por ventanas de PVC blanco con vidrio color bronce",      weight:49500},
+          {id:"t24", code:"24", name:"Hacer estructura de tanque incluye tanque de 1,100 litros",                weight:21135},
+          {id:"t25", code:"25", name:"Hacer lavadero",                                                            weight:4000},
+          {id:"t26", code:"26", name:"Extender techo de casa hacia muro",                                        weight:14000},
+          {id:"t27", code:"27", name:"Cambiar 7 contramarco de laurel",                                          weight:10500},
+          {id:"t28", code:"28", name:"Instalar 7 puertas con sus respectivos llavines (no incluye puertas)",     weight:12000},
+          {id:"t29", code:"29", name:"Reparar fisuras en pared por los 2 lados",                                 weight:6451},
+          {id:"t30", code:"30", name:"Poner tablilla en aleros",                                                 weight:8000}
+        ]}
+      ]
+    },
+    {
+      id:"add1", code:"B", name:"Adiciones — Acabados",
+      desc:"Porcelanato, resane, pintura y tubería (mensaje 1)",
+      items:[
+        {id:"a1", code:"B1", name:"Instalar porcelanato en una unidad", cost:64875},
+        {id:"a2", code:"B2", name:"Resanar paredes de una unidad", cost:35500},
+        {id:"a3", code:"B3", name:"Pintar completa una unidad", cost:6000},
+        {id:"a4", code:"B4", name:"Conectar tubería de agua potable (2 unidades)", cost:5200}
+      ]
+    },
+    {
+      id:"add2", code:"C", name:"Adiciones — Instalaciones y Baño",
+      desc:"Electricidad Quimistán, cerámica, sanitario, ducha (mensaje 2)",
+      items:[
+        {id:"c1", code:"C3", name:"Electricidad en casa de Quimistán", cost:18500},
+        {id:"c2", code:"C4", name:"Cerámica de baño", cost:7050},
+        {id:"c3", code:"C5", name:"1 Sanitario", cost:3900},
+        {id:"c4", code:"C6", name:"Accesorios de sanitario y lavamano", cost:1900},
+        {id:"c5", code:"C7", name:"1 Ducha", cost:1100}
+      ]
+    }
+  ]
+};
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let state = {
+  groups:[],        // [{id,code,name,description,sort_order,collapsed,items:[...]}]
+  payments:[],
+  projStart:"", projEnd:"",
+  logs:[],          // all log entries (grouped per item on render)
+  images:[],        // all images (grouped per item on render)
+  tasks:[]          // sub-tareas bajo los hitos del contrato base
+};
+let expandedItem = null; // id of item with detail panel open
+
+/* ============================================================
+   SUPABASE I/O
+   ============================================================ */
+function setSync(kind, text){
+  const tag = document.getElementById('sync-tag');
+  tag.classList.remove('sync','err');
+  if(kind==='sync') tag.classList.add('sync');
+  if(kind==='err')  tag.classList.add('err');
+  document.getElementById('sync-text').textContent = text;
+}
+
+async function loadFromDB(){
+  setSync('sync','Sincronizando…');
+  try{
+    const [g, i, p, m, l, im, tk] = await Promise.all([
+      sb.from('duplex_groups').select('*').order('sort_order'),
+      sb.from('duplex_items').select('*').order('sort_order'),
+      sb.from('duplex_payments').select('*').order('created_at'),
+      sb.from('duplex_meta').select('*'),
+      sb.from('duplex_progress_log').select('*').order('created_at',{ascending:false}),
+      sb.from('duplex_progress_images').select('*').order('created_at',{ascending:false}),
+      sb.from('duplex_tasks').select('*').order('sort_order'),
+    ]);
+    for(const r of [g,i,p,m,l,im,tk]) if(r.error) throw r.error;
+
+    if(!g.data || g.data.length===0){
+      await seedDefaults();
+      return loadFromDB();
+    }
+
+    state.tasks = tk.data || [];
+    state.groups = g.data.map(gr => ({
+      ...gr,
+      items: (i.data||[]).filter(it => it.group_id === gr.id).map(it => {
+        const tasks = state.tasks.filter(t => t.item_id === it.id);
+        if(tasks.length){
+          const avg = weightedAvg(tasks);
+          return { ...it, tasks, prog: avg, done: avg>=100 };
+        }
+        return { ...it, tasks: [] };
+      })
+    }));
+    state.payments = p.data || [];
+    state.logs     = l.data || [];
+    state.images   = im.data || [];
+
+    const meta = Object.fromEntries((m.data||[]).map(r=>[r.key, r.value]));
+    state.projStart = meta.projStart || "";
+    state.projEnd   = meta.projEnd   || "";
+
+    document.getElementById('proj-start').value = state.projStart;
+    document.getElementById('proj-end').value   = state.projEnd;
+
+    setSync('','En vivo · Supabase');
+  }catch(err){
+    console.error(err);
+    setSync('err','Sin conexión a Supabase');
+  }
+}
+
+async function seedDefaults(){
+  setSync('sync','Sembrando datos iniciales…');
+  const grows = DEFAULT_DATA.groups.map((g,i)=>({
+    id:g.id, code:g.code, name:g.name, description:g.desc, sort_order:i, collapsed:false
+  }));
+  const { error: ge } = await sb.from('duplex_groups').insert(grows);
+  if(ge) throw ge;
+  const irows = [], trows = [];
+  DEFAULT_DATA.groups.forEach(g => g.items.forEach((it,ii)=>{
+    irows.push({
+      id:it.id, group_id:g.id, code:it.code, name:it.name,
+      cost:it.cost, prog:0, done:false, sort_order:ii
+    });
+    (it.tasks||[]).forEach((tk,ti)=>{
+      trows.push({
+        id:tk.id, item_id:it.id, code:tk.code, name:tk.name,
+        prog:0, done:false, weight:tk.weight||0, sort_order:ti
+      });
+    });
+  }));
+  const { error: ie } = await sb.from('duplex_items').insert(irows);
+  if(ie) throw ie;
+  if(trows.length){
+    const { error: te } = await sb.from('duplex_tasks').insert(trows);
+    if(te) throw te;
+  }
+}
+
+async function setMeta(key, value){
+  await sb.from('duplex_meta').upsert({key, value, updated_at: new Date().toISOString()});
+}
+
+/* ============================================================
+   CÁLCULOS
+   ============================================================ */
+const L = n => "L " + (Math.round(n)).toLocaleString("es-HN");
+const L2 = n => "L " + Number(n).toLocaleString("es-HN",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function groupTotal(g){ return g.items.reduce((s,it)=>s+Number(it.cost),0); }
+function groupEarned(g){ return g.items.reduce((s,it)=>s+Number(it.cost)*(Number(it.prog)/100),0); }
+function projectTotal(){ return state.groups.reduce((s,g)=>s+groupTotal(g),0); }
+function projectEarned(){ return state.groups.reduce((s,g)=>s+groupEarned(g),0); }
+function totalPaid(){ return state.payments.reduce((s,p)=>s+Number(p.amount||0),0); }
+function progressPct(){
+  const t=projectTotal();
+  return t>0 ? (projectEarned()/t*100) : 0;
+}
+function logsForItem(id){ return state.logs.filter(l=>l.item_id===id); }
+function imagesForItem(id){ return state.images.filter(im=>im.item_id===id); }
+function lastUpdateFor(id){
+  const ls = logsForItem(id);
+  return ls.length ? ls[0] : null;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+let chartMoney, chartGroups;
+
+function render(){
+  renderRoleUI();
+  renderGroups();
+  renderPayments();
+  renderKPIs();
+  renderSchedule();
+  renderCharts();
+}
+
+function renderRoleUI(){
+  document.body.classList.toggle('role-contractor', ROLE==='contractor');
+  document.body.classList.toggle('role-owner',      ROLE==='owner');
+  const tag = document.getElementById('role-tag');
+  tag.classList.remove('owner','contractor');
+  if(ROLE==='owner'){
+    tag.classList.add('owner');
+    tag.innerHTML = '👑 Dueño · <span style="opacity:.7;font-weight:400">cerrar sesión</span>';
+  } else {
+    tag.classList.add('contractor');
+    tag.innerHTML = '🛠 Contratista · <span style="opacity:.7;font-weight:400">cerrar sesión</span>';
+  }
+  const h3 = document.getElementById('pay-h3');
+  if(h3) h3.textContent = ROLE==='owner' ? 'Registrar un pago' : 'Pagos recibidos';
+}
+
+function renderKPIs(){
+  const total=projectTotal(), earned=projectEarned(), paid=totalPaid();
+  const prog=progressPct();
+  document.getElementById("kpi-progress").textContent = prog.toFixed(1)+"%";
+  document.getElementById("kpi-earned").textContent = L(earned);
+  document.getElementById("kpi-paid").textContent = L(paid);
+  document.getElementById("kpi-paid-sub").textContent =
+    state.payments.length + (state.payments.length===1?" pago registrado":" pagos registrados");
+  document.getElementById("kpi-total").textContent = L(total);
+  document.getElementById("kpi-total-sub").textContent = state.groups.length+" grupos de obra";
+
+  const dueNow = Math.max(0, earned - paid);
+  const remaining = Math.max(0, total - paid);
+  const paidPct = total>0 ? Math.min(100, paid/total*100) : 0;
+  document.getElementById("bal-due-now").textContent = L(dueNow);
+  document.getElementById("bal-remaining").textContent = L(remaining);
+  document.getElementById("bal-paid").textContent = L(paid);
+  document.getElementById("bal-earned").textContent = L(earned);
+  document.getElementById("bal-paid-pct").textContent = paidPct.toFixed(1)+"%";
+  document.getElementById("bal-rest-pct").textContent = (100-paidPct).toFixed(1)+"%";
+  document.getElementById("bal-bar").style.width = paidPct+"%";
+
+  const alert=document.getElementById("overpay-alert");
+  if(paid - earned > 1){
+    alert.textContent = ROLE==='contractor'
+      ? `⚠ He recibido L ${Math.round(paid-earned).toLocaleString("es-HN")} más de lo que mi avance justifica. Voy adelantado en cobros respecto al trabajo terminado.`
+      : `⚠ Has pagado L ${Math.round(paid-earned).toLocaleString("es-HN")} más de lo que el avance justifica. El contratista va adelantado en cobros respecto al trabajo terminado.`;
+    alert.classList.add("show");
+  } else {
+    alert.classList.remove("show");
+  }
+}
+
+function renderItemProgCell(it, lastTxt, imgs, expanded){
+  const itProg = Number(it.prog)||0;
+  return `<div class="prog-cell view-only">
+    <div class="ptop"><span>Avance</span><span class="pval">${itProg}%</span></div>
+    <input type="range" class="slider" min="0" max="100" step="5" value="${itProg}"
+      data-prev="${itProg}"
+      onchange="onSliderChange('${it.id}',this)">
+    <label class="done-check">
+      <input type="checkbox" ${it.done?"checked":""}
+        onchange="onDoneToggle('${it.id}',${itProg},this.checked,this)">
+      Marcar como 100% terminado
+    </label>
+    <div class="updated">${lastTxt}</div>
+    <div class="row-actions">
+      <button onclick="toggleDetail('${it.id}')" class="${imgs.length?'has-imgs':''}">
+        ${expanded?'▴ Ocultar':'▾ Ver'} historial${imgs.length?` · ${imgs.length} 📷`:''}
+      </button>
+    </div>
+  </div>`;
+}
+
+function renderHitoProgCell(it, imgs, expanded){
+  const tasks = it.tasks || [];
+  const done  = tasks.filter(t=>Number(t.prog)>=100).length;
+  const partial = tasks.filter(t=>Number(t.prog)>0 && Number(t.prog)<100).length;
+  const avg = tasks.length ? weightedAvg(tasks) : 0;
+  return `<div class="prog-cell view-only">
+    <div class="ptop"><span>Avance</span><span class="pval">${avg.toFixed(1)}%</span></div>
+    <div class="bar-track" style="height:6px;border-radius:5px">
+      <div class="bar-fill" style="width:${avg}%"></div>
+    </div>
+    <div class="updated">${done} terminadas · ${partial} en progreso · ${tasks.length-done-partial} pendientes</div>
+    <div class="row-actions">
+      <button onclick="toggleDetail('${it.id}')" class="${imgs.length?'has-imgs':''}">
+        ${expanded?'▴ Ocultar':'▾ Ver/editar'} ${tasks.length} trabajos${imgs.length?` · ${imgs.length} 📷`:''}
+      </button>
+    </div>
+  </div>`;
+}
+
+function renderGroups(){
+  const cont=document.getElementById("groups-container");
+  cont.innerHTML="";
+  state.groups.forEach((g,gi)=>{
+    const gTot=groupTotal(g), gEarn=groupEarned(g);
+    const gPct = gTot>0 ? (gEarn/gTot*100) : 0;
+    const div=document.createElement("div");
+    div.className="card group"+(g.collapsed?" collapsed":"");
+
+    let itemsHTML = `<div class="item-head-row">
+        <span>Partida</span><span>Costo</span><span>Avance del contratista</span><span>Pago ganado</span>
+      </div>`;
+
+    g.items.forEach((it,ii)=>{
+      const itProg = Number(it.prog)||0;
+      const earned = Number(it.cost) * (itProg/100);
+      const imgs = imagesForItem(it.id);
+      const lastLog = lastUpdateFor(it.id);
+      const lastTxt = lastLog
+        ? `Última: ${fmtDate(lastLog.created_at)} · ${lastLog.changed_by==='owner'?'dueño':'contratista'}`
+        : `Sin actualizaciones aún`;
+      const expanded = expandedItem === it.id;
+      const hasTasks = (it.tasks||[]).length > 0;
+      const progCell = hasTasks
+        ? renderHitoProgCell(it, imgs, expanded)
+        : renderItemProgCell(it, lastTxt, imgs, expanded);
+
+      itemsHTML += `<div class="item" data-item="${it.id}">
+        <div class="iname">
+          <span class="view-only">${escapeHTML(it.name)}</span>
+          <span class="view-only icode">${escapeHTML(it.code||'')}</span>
+          <input class="editable-name edit-only" value="${escapeAttr(it.name)}"
+            onchange="editItemName('${it.id}',this.value)">
+        </div>
+        <div class="icost">
+          <span class="ic-lbl">Costo</span>
+          <span class="view-only">${L2(it.cost)}</span>
+          <input type="number" class="edit-input edit-only" value="${it.cost}"
+            onchange="editItemCost('${it.id}',this.value)">
+        </div>
+        ${progCell}
+        <div class="ipay view-only">
+          <span class="ip-lbl">Ganado</span>
+          <span class="amt">${L(earned)}</span>
+        </div>
+        <button class="btn btn-danger btn-sm edit-only" onclick="deleteItem('${it.id}')">Eliminar</button>
+        ${expanded ? renderItemDetail(it) : ''}
+      </div>`;
+    });
+
+    itemsHTML += `<div class="add-item-row edit-only">
+      <button class="btn btn-ghost btn-sm" onclick="addItem('${g.id}')">+ Agregar partida a este grupo</button>
+    </div>`;
+
+    div.innerHTML = `
+      <div class="group-head" onclick="toggleGroup('${g.id}',event)">
+        <div class="gicon">${g.code}</div>
+        <div class="gtitle">
+          <div class="gt">${escapeHTML(g.name)}</div>
+          <div class="gd">${escapeHTML(g.description||'')} · ${g.items.length} partidas</div>
+        </div>
+        <div class="gtotals">
+          <div class="gt-pay">${L(gTot)}</div>
+          <div class="gt-lbl">${gPct.toFixed(0)}% avance · ganado ${L(gEarn)}</div>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="group-body">${itemsHTML}</div>`;
+    cont.appendChild(div);
+  });
+}
+
+function renderItemDetail(it){
+  const logs = logsForItem(it.id);
+  const imgs = imagesForItem(it.id);
+  let imgsHTML = imgs.length
+    ? `<div class="img-grid">${imgs.map(im=>`
+        <div class="thumb" style="background-image:url('${escapeAttr(im.public_url)}')"
+          onclick="openViewer('${escapeAttr(im.public_url)}')" title="${escapeAttr(im.caption||'')}"></div>
+      `).join('')}</div>`
+    : `<div style="font-size:12px;color:var(--ink-soft);margin-bottom:12px">Aún no hay fotos para esta partida.</div>`;
+  const uploadBtn = `<label class="file-drop file-drop-sm">
+      <input type="file" accept="image/*" multiple
+        onchange="uploadItemPhotos('${it.id}', this)">
+      📷 Subir fotos para esta partida <span style="color:var(--ink-soft);font-weight:400">(puedes seleccionar varias)</span>
+    </label>`;
+
+  let logsHTML = logs.length
+    ? `<div class="log-list">${logs.map(lg=>{
+        const arr = lg.prog_old==null
+          ? `Inicial → <b>${lg.prog_new}%</b>`
+          : `${lg.prog_old}% → <b>${lg.prog_new}%</b>`;
+        return `<div class="log-entry">
+          <span class="lbadge ${lg.changed_by}">${lg.changed_by==='owner'?'Dueño':'Contratista'}</span>
+          <div class="ltext">
+            <div>${arr} · <span class="lwhen">${fmtDate(lg.created_at)}</span></div>
+            ${lg.note ? `<div class="lnote">"${escapeHTML(lg.note)}"</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}</div>`
+    : `<div style="font-size:12px;color:var(--ink-soft)">Sin historial de cambios.</div>`;
+
+  let tasksHTML = '';
+  if((it.tasks||[]).length){
+    const totalW = it.tasks.reduce((s,t)=>s+(Number(t.weight)||0),0);
+    tasksHTML = `<h4>✅ Trabajos del contrato (${it.tasks.length}) · avance ponderado <b>${(Number(it.prog)||0).toFixed(1)}%</b></h4>
+      <div class="task-list">
+        ${it.tasks.map(tk=>{
+          const p = Number(tk.prog)||0;
+          const w = Number(tk.weight)||0;
+          const wPct = totalW>0 ? (w/totalW*100) : 0;
+          return `<div class="task-row">
+            <div class="task-head">
+              <div class="task-name"><b>${escapeHTML(tk.code||'')}</b> · ${escapeHTML(tk.name)}</div>
+              <div class="task-meta">peso ${wPct.toFixed(1)}% · <span class="t-prog-val">${p}%</span></div>
+            </div>
+            <input type="range" class="slider t-slider" min="0" max="100" step="5" value="${p}"
+              data-prev="${p}"
+              oninput="this.parentNode.querySelector('.t-prog-val').textContent = this.value + '%'"
+              onchange="setTaskProg('${tk.id}', Number(this.value))">
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+  const historyBlock = ROLE==='owner'
+    ? `<h4>📋 Historial de cambios</h4>${logsHTML}`
+    : '';
+  return `<div class="item-detail">
+    ${tasksHTML}
+    <h4>📷 Fotos del avance</h4>
+    ${imgsHTML}
+    ${uploadBtn}
+    ${historyBlock}
+  </div>`;
+}
+
+async function uploadItemPhotos(itemId, inputEl){
+  const files = Array.from(inputEl.files||[]);
+  inputEl.value = '';
+  if(!files.length) return;
+  setSync('sync','Subiendo fotos…');
+  try{
+    for(const f of files){
+      if(f.size > 5*1024*1024){ alert(`"${f.name}" pasa de 5 MB`); continue; }
+      const safe = f.name.replace(/[^\w.\-]+/g,'_').slice(0,60);
+      const path = `${itemId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safe}`;
+      const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || 'image/jpeg' });
+      if(up.error){ console.error(up.error); continue; }
+      const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
+      await sb.from('duplex_progress_images').insert({
+        item_id: itemId, storage_path: path, public_url: pub.publicUrl, uploaded_by: ROLE
+      });
+    }
+    await loadFromDB(); render();
+  }catch(err){
+    console.error(err); alert('Error subiendo fotos: '+(err.message||err));
+    setSync('err','Error subiendo');
+  }
+}
+
+function renderPayments(){
+  const list=document.getElementById("pay-list");
+  if(state.payments.length===0){
+    list.innerHTML=`<div style="font-size:12.5px;color:var(--ink-soft);padding:10px;background:#faf8f1;border-radius:9px">Aún no hay pagos registrados.</div>`;
+    return;
+  }
+  let html="";
+  [...state.payments].reverse().forEach(p=>{
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;margin-bottom:7px;background:#fff">
+      <div style="font-size:12.5px;line-height:1.3">
+        <b style="font-family:'Fraunces',serif;font-size:14px;color:var(--green-deep)">${L(Number(p.amount))}</b>
+        <span style="color:var(--ink-soft)"> · ${p.paid_on||"sin fecha"}</span>
+        ${p.note?`<div style="color:var(--ink-soft);margin-top:1px">${escapeHTML(p.note)}</div>`:""}
+      </div>
+      <button class="btn btn-danger btn-sm owner-only" onclick="deletePayment('${p.id}')">✕</button>
+    </div>`;
+  });
+  list.innerHTML=html;
+}
+
+function renderSchedule(){
+  const tsTotal=document.getElementById("ts-total");
+  const tsElapsed=document.getElementById("ts-elapsed");
+  const tsLeft=document.getElementById("ts-left");
+  const tsStatus=document.getElementById("ts-status");
+  const timeBar=document.getElementById("time-bar");
+  const timePct=document.getElementById("time-pct");
+  const timeProg=document.getElementById("time-progress");
+
+  const prog=progressPct();
+  timeProg.textContent=prog.toFixed(0)+"%";
+
+  const s=state.projStart, e=state.projEnd;
+  if(!s||!e){
+    tsTotal.textContent=tsElapsed.textContent=tsLeft.textContent="—";
+    tsStatus.textContent="Define las fechas";
+    tsStatus.className="ts-v";
+    timeBar.style.width="0%"; timePct.textContent="0%";
+    return;
+  }
+  const start=new Date(s), end=new Date(e), now=new Date();
+  const dayMs=86400000;
+  const totalDays=Math.max(1,Math.round((end-start)/dayMs));
+  const elapsed=Math.max(0,Math.round((now-start)/dayMs));
+  const left=Math.round((end-now)/dayMs);
+  const tElapsedPct=Math.max(0,Math.min(100,elapsed/totalDays*100));
+
+  tsTotal.textContent=totalDays+" días";
+  tsElapsed.textContent=Math.min(elapsed,totalDays)+" días";
+  tsLeft.textContent= left>=0 ? left+" días" : Math.abs(left)+" días de retraso";
+  tsLeft.className="ts-v"+(left<0?" red":"");
+  timeBar.style.width=tElapsedPct+"%";
+  timePct.textContent=tElapsedPct.toFixed(0)+"%";
+
+  let status, cls;
+  if(left<0 && prog<100){ status="Retrasado"; cls="ts-v red"; }
+  else if(prog>=100){ status="Obra completada"; cls="ts-v green"; }
+  else if(prog>=tElapsedPct-5){ status="En tiempo"; cls="ts-v green"; }
+  else{ status="Atrasado vs. cronograma"; cls="ts-v clay"; }
+  tsStatus.textContent=status;
+  tsStatus.className=cls;
+}
+
+function renderCharts(){
+  const total=projectTotal(), earned=projectEarned(), paid=totalPaid();
+  const mData=[paid, earned, total];
+  if(chartMoney){
+    chartMoney.data.datasets[0].data=mData; chartMoney.update();
+  }else{
+    chartMoney=new Chart(document.getElementById("chartMoney"),{
+      type:"bar",
+      data:{labels:["Pagado","Ganado por avance","Presupuesto total"],
+        datasets:[{data:mData,backgroundColor:["#bf6b3f","#3f6b3a","#c9c3b0"],borderRadius:8,barThickness:54}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>"L "+c.raw.toLocaleString("es-HN")}}},
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>"L"+(v/1000)+"k",font:{family:"Outfit"}},grid:{color:"#eceadf"}},
+                x:{ticks:{font:{family:"Outfit",size:11}},grid:{display:false}}}}
+    });
+  }
+  const gLabels=state.groups.map(g=>g.name);
+  const gVals=state.groups.map(g=>{const t=groupTotal(g); return t>0?(groupEarned(g)/t*100):0;});
+  if(chartGroups){
+    chartGroups.data.labels=gLabels;
+    chartGroups.data.datasets[0].data=gVals; chartGroups.update();
+  }else{
+    chartGroups=new Chart(document.getElementById("chartGroups"),{
+      type:"bar",
+      data:{labels:gLabels,datasets:[{data:gVals,backgroundColor:["#3f6b3a","#5a8a4f","#88ad6f","#a8c590","#c4d9b2"],borderRadius:8,barThickness:40}]},
+      options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw.toFixed(1)+"% completado"}}},
+        scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+"%",font:{family:"Outfit"}},grid:{color:"#eceadf"}},
+                y:{ticks:{font:{family:"Outfit",size:11}},grid:{display:false}}}}
+    });
+  }
+}
+
+/* ============================================================
+   ACCIONES — PROGRESS (modal confirmación + fotos)
+   ============================================================ */
+let pendingProg = null; // {itemId, oldProg, newProg, sliderEl?, checkboxEl?}
+let pendingFiles = [];
+
+function onSliderChange(itemId, el){
+  const newVal = Number(el.value);
+  const oldVal = Number(el.dataset.prev);
+  if(newVal === oldVal) return;
+  openProgModal(itemId, oldVal, newVal, el, null);
+}
+function onDoneToggle(itemId, currentProg, checked, el){
+  const newVal = checked ? 100 : 0;
+  if(newVal === currentProg){ return; }
+  openProgModal(itemId, currentProg, newVal, null, el);
+}
+
+function openProgModal(itemId, oldProg, newProg, sliderEl, checkboxEl){
+  const it = findItem(itemId);
+  pendingProg = { itemId, oldProg, newProg, sliderEl, checkboxEl };
+  pendingFiles = [];
+  document.getElementById('pm-title').textContent = `Confirmar avance — ${it.name}`;
+  document.getElementById('pm-sub').textContent   = `Partida ${it.code||''} · ${L2(it.cost)}`;
+  document.getElementById('pm-old').textContent = oldProg+'%';
+  document.getElementById('pm-new').textContent = newProg+'%';
+  document.getElementById('pm-note').value = '';
+  document.getElementById('pm-files').value = '';
+  renderFilePreview();
+  document.getElementById('pm-spin').classList.remove('show');
+  document.getElementById('pm-confirm').disabled = false;
+  document.getElementById('prog-modal').classList.add('show');
+}
+
+function closeProgModal(){
+  // revert UI to pre-modal state
+  if(pendingProg){
+    if(pendingProg.sliderEl){
+      pendingProg.sliderEl.value = pendingProg.oldProg;
+    }
+    if(pendingProg.checkboxEl){
+      pendingProg.checkboxEl.checked = (pendingProg.oldProg===100);
+    }
+  }
+  pendingProg = null; pendingFiles = [];
+  document.getElementById('prog-modal').classList.remove('show');
+}
+
+document.getElementById('pm-files').addEventListener('change', e=>{
+  for(const f of e.target.files){
+    if(f.size > 5*1024*1024){ alert(`"${f.name}" pasa de 5 MB`); continue; }
+    pendingFiles.push(f);
+  }
+  e.target.value='';
+  renderFilePreview();
+});
+
+function renderFilePreview(){
+  const wrap = document.getElementById('pm-preview');
+  wrap.innerHTML='';
+  pendingFiles.forEach((f, idx)=>{
+    const url = URL.createObjectURL(f);
+    const div = document.createElement('div');
+    div.className = 'fp';
+    div.style.backgroundImage = `url('${url}')`;
+    div.innerHTML = `<button onclick="removePendingFile(${idx})">✕</button>`;
+    wrap.appendChild(div);
+  });
+}
+function removePendingFile(idx){
+  pendingFiles.splice(idx,1);
+  renderFilePreview();
+}
+
+async function confirmProg(){
+  if(!pendingProg) return;
+  const { itemId, oldProg, newProg } = pendingProg;
+  const note = document.getElementById('pm-note').value.trim() || null;
+  document.getElementById('pm-confirm').disabled = true;
+  document.getElementById('pm-spin').classList.add('show');
+
+  try{
+    // 1) update item
+    const upd = await sb.from('duplex_items').update({
+      prog: newProg, done: newProg===100, updated_at: new Date().toISOString()
+    }).eq('id', itemId);
+    if(upd.error) throw upd.error;
+
+    // 2) insert log
+    const ins = await sb.from('duplex_progress_log').insert({
+      item_id: itemId, prog_old: oldProg, prog_new: newProg,
+      changed_by: ROLE, note
+    }).select().single();
+    if(ins.error) throw ins.error;
+    const logId = ins.data.id;
+
+    // 3) upload images
+    for(const f of pendingFiles){
+      const safe = f.name.replace(/[^\w.\-]+/g,'_').slice(0,60);
+      const path = `${itemId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${safe}`;
+      const up = await sb.storage.from(BUCKET).upload(path, f, { contentType: f.type || 'image/jpeg' });
+      if(up.error){ console.error('upload err', up.error); continue; }
+      const { data: pub } = sb.storage.from(BUCKET).getPublicUrl(path);
+      const imgIns = await sb.from('duplex_progress_images').insert({
+        log_id: logId, item_id: itemId,
+        storage_path: path, public_url: pub.publicUrl,
+        uploaded_by: ROLE
+      });
+      if(imgIns.error) console.error('img insert err', imgIns.error);
+    }
+
+    pendingProg = null; pendingFiles = [];
+    document.getElementById('prog-modal').classList.remove('show');
+    expandedItem = itemId; // show updated history right away
+    await loadFromDB();
+    render();
+  }catch(err){
+    console.error(err);
+    alert('No se pudo guardar el cambio:\n'+(err.message||err));
+    document.getElementById('pm-confirm').disabled = false;
+    document.getElementById('pm-spin').classList.remove('show');
+  }
+}
+
+/* ============================================================
+   ACCIONES — RESTO (solo dueño)
+   ============================================================ */
+function findItem(id){
+  for(const g of state.groups) for(const it of g.items) if(it.id===id) return it;
+  return null;
+}
+function findGroup(id){ return state.groups.find(g=>g.id===id); }
+
+async function toggleGroup(gid,ev){
+  if(ev.target.closest("input,button,label,.slider")) return;
+  const g = findGroup(gid);
+  g.collapsed = !g.collapsed;
+  if(ROLE==='owner'){
+    await sb.from('duplex_groups').update({collapsed:g.collapsed}).eq('id',gid);
+  }
+  render();
+}
+
+function toggleDetail(itemId){
+  expandedItem = (expandedItem===itemId) ? null : itemId;
+  render();
+}
+
+async function editItemName(id, val){
+  if(ROLE!=='owner') return;
+  await sb.from('duplex_items').update({name:val}).eq('id',id);
+  await loadFromDB(); render();
+}
+async function editItemCost(id, val){
+  if(ROLE!=='owner') return;
+  await sb.from('duplex_items').update({cost: Math.max(0,Number(val)||0)}).eq('id',id);
+  await loadFromDB(); render();
+}
+async function addItem(gid){
+  if(ROLE!=='owner') return;
+  const g = findGroup(gid);
+  const id = 'new_'+Date.now().toString(36);
+  await sb.from('duplex_items').insert({
+    id, group_id: gid, code:'+', name:'Nueva partida', cost:0, prog:0, done:false,
+    sort_order: g.items.length
+  });
+  await loadFromDB(); render();
+}
+async function deleteItem(id){
+  if(ROLE!=='owner') return;
+  if(!confirm("¿Eliminar esta partida? Se borrarán también sus fotos e historial.")) return;
+  await sb.from('duplex_items').delete().eq('id', id);
+  await loadFromDB(); render();
+}
+async function addPayment(){
+  if(ROLE!=='owner') return;
+  const amt  = document.getElementById("pay-amount").value;
+  const date = document.getElementById("pay-date").value || null;
+  const note = document.getElementById("pay-note").value || null;
+  if(!amt || Number(amt)<=0){ alert("Ingresa un monto válido."); return; }
+  const { error } = await sb.from('duplex_payments').insert({
+    amount: Number(amt), paid_on: date, note
+  });
+  if(error){ alert("Error guardando pago: "+error.message); return; }
+  document.getElementById("pay-amount").value="";
+  document.getElementById("pay-note").value="";
+  await loadFromDB(); render();
+}
+async function deletePayment(id){
+  if(ROLE!=='owner') return;
+  if(!confirm("¿Eliminar este pago?")) return;
+  await sb.from('duplex_payments').delete().eq('id', id);
+  await loadFromDB(); render();
+}
+
+async function setTaskProg(taskId, newProg){
+  const task = state.tasks.find(t=>t.id===taskId);
+  if(!task) return;
+  const oldProg = Number(task.prog)||0;
+  if(oldProg === newProg) return;
+  task.prog = newProg;
+  task.done = newProg>=100;
+  // optimistic re-render so el feedback es inmediato
+  recomputeHitoProgs();
+  render();
+  try{
+    const { error } = await sb.from('duplex_tasks')
+      .update({prog:newProg, done:newProg>=100, updated_at:new Date().toISOString()})
+      .eq('id', taskId);
+    if(error) throw error;
+    await sb.from('duplex_progress_log').insert({
+      item_id: task.item_id,
+      prog_old: oldProg, prog_new: newProg,
+      changed_by: ROLE,
+      note: `Tarea: ${task.name}`
+    });
+    await loadFromDB(); render();
+  }catch(err){
+    console.error(err);
+    alert('No se pudo guardar el cambio: '+(err.message||err));
+    await loadFromDB(); render();
+  }
+}
+
+function weightedAvg(tasks){
+  const totalW = tasks.reduce((s,t)=>s+(Number(t.weight)||0),0);
+  if(totalW > 0){
+    return tasks.reduce((s,t)=>s + Number(t.prog)*(Number(t.weight)||0), 0) / totalW;
+  }
+  // fallback: promedio simple si todos los weights son 0
+  return tasks.reduce((s,t)=>s+Number(t.prog),0) / tasks.length;
+}
+function recomputeHitoProgs(){
+  state.groups.forEach(g => g.items.forEach(it => {
+    if((it.tasks||[]).length){
+      const avg = weightedAvg(it.tasks);
+      it.prog = avg;
+      it.done = avg>=100;
+    }
+  }));
+}
+function toggleEdit(){
+  if(ROLE!=='owner') return;
+  document.body.classList.toggle("edit-mode");
+  const btn=document.getElementById("editToggle");
+  if(document.body.classList.contains("edit-mode")){
+    btn.textContent="✓ Terminar edición";
+    btn.classList.remove("btn-ghost"); btn.classList.add("btn-green");
+  }else{
+    btn.textContent="✎ Editar presupuesto";
+    btn.classList.add("btn-ghost"); btn.classList.remove("btn-green");
+  }
+}
+
+function logout(){
+  if(!confirm("¿Cerrar sesión y volver al PIN?")) return;
+  sessionStorage.removeItem('duplex_role_v2');
+  location.reload();
+}
+
+/* ============================================================
+   IMG VIEWER
+   ============================================================ */
+function openViewer(url){
+  document.getElementById('viewer-img').src = url;
+  document.getElementById('viewer').classList.add('show');
+}
+function closeViewer(ev){
+  if(ev && ev.target.tagName==='IMG') return;
+  document.getElementById('viewer').classList.remove('show');
+}
+
+/* ============================================================
+   UTIL
+   ============================================================ */
+function escapeHTML(s){return (s==null?"":String(s)).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+function escapeAttr(s){return (s==null?"":String(s)).replace(/"/g,"&quot;");}
+function fmtDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString('es-HN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init(){
+  ROLE = sessionStorage.getItem('duplex_role_v2');
+  if(!ROLE){ return; } // PIN gate handles it
+
+  document.getElementById("pay-date").value = new Date().toISOString().slice(0,10);
+
+  document.getElementById("proj-start").addEventListener("change", async e=>{
+    state.projStart = e.target.value;
+    if(ROLE==='owner') await setMeta('projStart', state.projStart);
+    renderSchedule();
+  });
+  document.getElementById("proj-end").addEventListener("change", async e=>{
+    state.projEnd = e.target.value;
+    if(ROLE==='owner') await setMeta('projEnd', state.projEnd);
+    renderSchedule();
+  });
+
+  await loadFromDB();
+  render();
+  subscribeRealtime();
+}
+
+let rtTimer;
+function subscribeRealtime(){
+  sb.channel('duplex-sync')
+    .on('postgres_changes', {event:'*', schema:'public', table:'duplex_items'},          softRefetch)
+    .on('postgres_changes', {event:'*', schema:'public', table:'duplex_payments'},       softRefetch)
+    .on('postgres_changes', {event:'*', schema:'public', table:'duplex_progress_log'},   softRefetch)
+    .on('postgres_changes', {event:'*', schema:'public', table:'duplex_progress_images'},softRefetch)
+    .on('postgres_changes', {event:'*', schema:'public', table:'duplex_groups'},         softRefetch)
+    .on('postgres_changes', {event:'*', schema:'public', table:'duplex_tasks'},          softRefetch)
+    .subscribe();
+}
+function softRefetch(){
+  clearTimeout(rtTimer);
+  rtTimer = setTimeout(async()=>{ await loadFromDB(); render(); }, 500);
+}
+
+// arranque: si el PIN ya estaba en sesión, init() corre normal.
+// Si no, el gate llama window.__onRoleReady tras el PIN correcto.
+window.__onRoleReady = init;
+if(ROLE){ init(); }
+</script>
+</body>
+</html>
