@@ -141,18 +141,18 @@ antes de cambiar, según indica `AGENTS.md`).
 |---|-----------|-------|------------|----------|
 | 1 | 🔴 Alta | ✅ **Hecho** — Formulario migrado a Route Handler + Resend (`/api/contact`), reemplazando el endpoint roto de Formspree. *(Falta configurar las env vars en Vercel.)* | `src/app/api/contact/route.ts`, `src/components/Contact.tsx` | — |
 | 2 | 🔴 Alta | ✅ **Hecho** — `Accept: application/json`, reset del estado `error` con timeout y honeypot anti-spam. | `src/components/Contact.tsx` | — |
-| 3 | 🟠 Media | Corregir el hydration mismatch de las partículas (`Math.random` fuera del render). | `src/components/Hero.tsx` | 20 min |
-| 4 | 🟠 Media | Corregir los errores de lint `jsx-no-comment-textnodes` en las etiquetas `// Sección`. | `Projects/Services/Skills/About/Experience/Contact.tsx` | 10 min |
-| 5 | 🟡 Baja | Migrar `<img>` a `next/image` en las tarjetas de proyectos. | `src/components/Projects.tsx` | 20 min |
-| 6 | 🟡 Baja | Añadir imagen OG + `metadataBase` para vistas previas al compartir. | `src/app/layout.tsx`, `public/` | 30 min |
+| 3 | 🟠 Media | ✅ **Hecho** — Hydration mismatch de las partículas corregido (PRNG con semilla, `Math.random` fuera del render). | `src/components/Hero.tsx` | — |
+| 4 | 🟠 Media | ✅ **Hecho** — Errores `jsx-no-comment-textnodes` resueltos envolviendo las etiquetas `// Sección` en llaves. | `Projects/Services/Skills/About/Experience/Contact.tsx` | — |
+| 5 | 🟡 Baja | ✅ **Hecho** — `<img>` migrado a `next/image` (con `fill` + `sizes`) en las tarjetas de proyectos. | `src/components/Projects.tsx` | — |
+| 6 | 🟡 Baja | ✅ **Hecho** — Imagen OG/Twitter generada con `next/og` + `metadataBase`. | `src/app/opengraph-image.tsx`, `src/app/twitter-image.tsx`, `src/app/layout.tsx` | — |
 | 7 | — | ✅ **Hecho** — Backend del formulario implementado con Route Handler + Resend (Opción B). | `src/app/api/contact/route.ts` | — |
-| 8 | 🟢 Opcional | Centralizar datos de contacto y actualizar el README. | varios | 30 min |
+| 8 | 🟢 Opcional | ✅ **Hecho** — Datos de contacto centralizados en `src/lib/site.ts` y README reescrito. | `src/lib/site.ts`, `Contact.tsx`, `Footer.tsx`, `layout.tsx`, `README.md` | — |
 
-### Orden recomendado
-1. **Hoy:** tareas 1 y 2 → el formulario vuelve a funcionar.
-2. **Esta semana:** tareas 3 y 4 → `npm run lint` pasa en verde y se elimina el
-   parpadeo de hidratación.
-3. **Cuando haya tiempo:** tareas 5-8 → pulido de rendimiento, SEO y robustez.
+### Estado
+✅ **Todas las tareas (1-8) están implementadas.** Lo único pendiente es
+configurar las variables de entorno de Resend en Vercel (`RESEND_API_KEY`,
+`CONTACT_FROM_EMAIL` en un dominio verificado y, opcionalmente, `CONTACT_TO_EMAIL`)
+y hacer un redeploy para que el formulario envíe correos en producción.
 
 ---
 

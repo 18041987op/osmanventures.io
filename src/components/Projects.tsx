@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import { motion, useInView } from "framer-motion";
 import { ExternalLink, Sparkles } from "lucide-react";
 
@@ -164,10 +165,12 @@ export default function Projects() {
                 <div className={`lg:col-span-2 relative min-h-[280px] overflow-hidden bg-gradient-to-br ${project.gradient}`}>
                   {/* App screenshot */}
                   {project.image && (
-                    <img
+                    <Image
                       src={project.image}
                       alt={`${project.title} screenshot`}
-                      className="absolute inset-0 w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 40vw"
+                      className="object-cover object-top group-hover:scale-105 transition-transform duration-700"
                     />
                   )}
                   {/* Overlay on hover */}
