@@ -21,7 +21,8 @@ const timeline: TimelineItem[] = [
     description:
       "Serious commitment to mastering full-stack development, building production applications with modern technologies.",
     highlights: [
-      "Built 4 complete web applications serving a real business",
+      "Built RunTech, a modular SaaS running a real business daily",
+      "Launched Ulua Loans and client sites like AR-CHomes.com",
       "Integrated complex APIs (QuickBooks, OpenAI, Claude)",
       "Designed and implemented scalable database schemas",
       "Deployed and maintained production systems on Vercel",

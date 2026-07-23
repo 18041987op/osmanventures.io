@@ -9,7 +9,7 @@ interface Project {
   title: string;
   description: string;
   tech: string[];
-  url: string;
+  url?: string;
   features: string[];
   image?: string;
   gradient: string;
@@ -21,88 +21,56 @@ const projects: Project[] = [
   {
     title: "RunTech — Auto Shop Management SaaS",
     description:
-      "All-in-one SaaS platform built for independent auto repair shops. Currently in pilot at AutoRx Center in Charlotte, NC. Solving real operational problems from the inside out.",
+      "All-in-one modular SaaS platform for independent auto repair shops, born inside AutoRx Center in Charlotte, NC — where it now runs the entire operation. Each module can be enabled or disabled per client subscription.",
     tech: ["Next.js", "Supabase", "TypeScript", "AI Integration"],
     url: "https://runtech.run",
     features: [
-      "Shop operations dashboard",
-      "Payroll & technician management",
-      "Customer & vehicle tracking",
-      "QuickBooks integration",
-      "AI-powered insights",
-      "Multi-location ready",
+      "Modular — plug in features per subscription",
+      "Shop operations, customer & vehicle tracking",
+      "Built-in CRM",
+      "Integrated phone system",
+      "Run Pay — payment processing gateway",
+      "RunPayroll — payroll & technician management",
+      "Emma AI — built-in business assistant",
+      "Training & HR platform (EN/ES)",
     ],
+    image: "/images/management.jpg",
     gradient: "from-indigo-600/30 to-fuchsia-600/30",
-    badge: "Pilot Program",
+    badge: "In Production",
     isOwnProduct: true,
   },
   {
-    title: "AutoRx Management Portal",
+    title: "Ulua Loans",
     description:
-      "Complete business management system for the auto repair shop. Handles payroll, employee management, analytics, and integration with QuickBooks.",
-    tech: ["Next.js 15", "Supabase", "TypeScript", "Tailwind CSS"],
-    url: "https://management.autorxcenter.com",
+      "Lending platform for managing loans end to end \u2014 from origination and client records to payment schedules and collections tracking.",
+    tech: ["Next.js", "Supabase", "TypeScript", "Tailwind CSS"],
     features: [
-      "Payroll processing and reports",
-      "Employee management system",
-      "Real-time analytics dashboard",
-      "Tool inventory tracking",
-      "Vendor bills management",
-      "QuickBooks integration",
+      "Loan origination & tracking",
+      "Payment schedules & reminders",
+      "Client management",
+      "Balance & interest calculations",
+      "Reporting dashboard",
+      "Secure role-based access",
     ],
-    image: "/images/management.jpg",
-    gradient: "from-blue-600/20 to-indigo-600/20",
-  },
-  {
-    title: "AutoRx Training Platform",
-    description:
-      "Comprehensive employee training and HR platform with bilingual support. Features AI-powered coaching, assessments, and tool borrowing system.",
-    tech: ["React", "Express.js", "Supabase", "i18n", "TypeScript"],
-    url: "https://training.autorxcenter.com",
-    features: [
-      "Interactive training modules",
-      "AI-powered coaching system",
-      "Skills assessments",
-      "Tool borrowing workflow",
-      "HR self-service portal",
-      "Bilingual interface (EN/ES)",
-    ],
-    image: "/images/training.jpg",
-    gradient: "from-purple-600/20 to-pink-600/20",
-  },
-  {
-    title: "Emma AI \u2014 Business Assistant",
-    description:
-      "Intelligent AI assistant that learns business patterns and helps with financial management, bill tracking, and strategic insights.",
-    tech: ["Next.js", "Prisma", "OpenAI/Claude", "QuickBooks API"],
-    url: "https://emma.autorxcenter.com",
-    features: [
-      "P&L analysis and forecasting",
-      "Automated bill tracking",
-      "Spending alerts and insights",
-      "AI-powered morning briefings",
-      "Voice command support",
-      "Memory system that learns",
-    ],
-    image: "/images/emma.jpg",
     gradient: "from-emerald-600/20 to-cyan-600/20",
+    isOwnProduct: true,
   },
   {
-    title: "Control de Gastos",
+    title: "AR-CHomes.com",
     description:
-      "Expense tracking dashboard for monitoring business spending with budget management, category breakdowns, monthly history, and CSV import.",
-    tech: ["JavaScript", "HTML/CSS", "Chart.js", "Vercel"],
-    url: "https://control-gastos-ivory.vercel.app",
+      "Business website built for AR-C Homes \u2014 a modern, responsive site designed to showcase their work and turn visitors into leads.",
+    tech: ["Next.js", "Tailwind CSS", "Vercel"],
+    url: "https://ar-chomes.com",
     features: [
-      "Budget tracking with alerts",
-      "Category-based spending charts",
-      "Monthly expense history",
-      "CSV data import",
-      "Over-budget notifications",
-      "Repeating task management",
+      "Modern responsive design",
+      "Project & services showcase",
+      "Lead capture contact forms",
+      "SEO-optimized pages",
+      "Fast load performance",
+      "Mobile-first experience",
     ],
-    image: "/images/gastos.jpg",
-    gradient: "from-violet-600/20 to-amber-600/20",
+    gradient: "from-amber-600/20 to-orange-600/20",
+    badge: "Client Project",
   },
 ];
 
@@ -144,7 +112,7 @@ export default function Projects() {
             <span className="gradient-text">Work</span>
           </h2>
           <p className="text-slate-500 max-w-xl">
-            Real applications running in production, serving a real business every day.
+            Real applications running in production, serving real businesses every day.
           </p>
         </motion.div>
 
@@ -196,15 +164,19 @@ export default function Projects() {
                   {/* Title + link overlay */}
                   <div className="absolute inset-0 flex flex-col justify-between p-8 lg:p-10 z-10">
                     <h3 className="text-2xl font-bold text-white drop-shadow-lg pr-24">{project.title}</h3>
-                    <a
-                      href={project.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium group/link transition-colors"
-                    >
-                      View Live
-                      <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
-                    </a>
+                    {project.url ? (
+                      <a
+                        href={project.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium group/link transition-colors"
+                      >
+                        View Live
+                        <ExternalLink className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                      </a>
+                    ) : (
+                      <span className="text-white/60 text-sm font-medium">Private Platform</span>
+                    )}
                   </div>
                 </div>
 
