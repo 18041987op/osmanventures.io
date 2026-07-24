@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
+import Logo from "./Logo";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -35,9 +36,12 @@ export default function Navbar() {
           {/* Logo */}
           <a
             href="#top"
-            className="text-xl font-bold gradient-text hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            OP
+            <Logo className="w-8 h-8" />
+            <span className="text-lg font-bold tracking-tight">
+              osmanventures<span className="text-cyan-400">.io</span>
+            </span>
           </a>
 
           {/* Desktop Links */}

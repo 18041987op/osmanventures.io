@@ -134,6 +134,22 @@ body {
   animation: blink 1s step-end infinite;
 }
 
+/* Logo robot: the cursor-dash eye stays open, then winks briefly. */
+@keyframes logo-wink {
+  0%, 86%, 96%, 100% { opacity: 1; }
+  88%, 94% { opacity: 0; }
+}
+
+.logo-wink {
+  animation: logo-wink 3.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-wink {
+    animation: none;
+  }
+}
+
 /* ===== SECTION DIVIDER ===== */
 .section-divider {
   height: 1px;
