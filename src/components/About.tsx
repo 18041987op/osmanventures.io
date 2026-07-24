@@ -32,7 +32,7 @@ export default function About() {
     {
       icon: <Rocket className="w-5 h-5" />,
       title: "Ship & Iterate",
-      desc: "4 production apps built, deployed, and actively serving my business daily.",
+      desc: "RunTech SaaS and client projects built, deployed, and serving real businesses daily.",
     },
   ];
 
