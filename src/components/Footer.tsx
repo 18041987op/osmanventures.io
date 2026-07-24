@@ -2,6 +2,7 @@
 
 import { GitBranch, Mail } from "lucide-react";
 import { siteConfig } from "@/lib/site";
+import Logo from "./Logo";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -14,7 +15,7 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           {/* Brand */}
           <div className="flex items-center gap-3">
-            <span className="text-xl font-bold gradient-text">{siteConfig.initials}</span>
+            <Logo className="w-6 h-6" />
             <span className="text-sm text-slate-600">|</span>
             <span className="text-sm text-slate-500">{siteConfig.domain}</span>
           </div>
