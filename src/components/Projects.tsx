@@ -44,6 +44,7 @@ const projects: Project[] = [
     description:
       "Lending platform for managing loans end to end \u2014 from origination and client records to payment schedules and collections tracking.",
     tech: ["Next.js", "Supabase", "TypeScript", "Tailwind CSS"],
+    url: "https://prestamos.runtech.app",
     features: [
       "Loan origination & tracking",
       "Payment schedules & reminders",
