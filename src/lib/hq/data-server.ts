@@ -28,6 +28,9 @@ export type ExecutiveDashboard = {
     dependenciesTotal: number;
     dependenciesStarted: number;
     metricsDefined: number;
+    absenceTestsTotal: number;
+    absenceTestsPassed: number;
+    absenceTestsActive: number;
   };
 };
 
