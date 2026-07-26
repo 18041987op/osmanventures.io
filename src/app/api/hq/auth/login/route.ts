@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   createHqSession,
   HQ_SESSION_COOKIE,
-  hqSessionMaxAge,
+  hqSessionCookieOptions,
   isHqAuthConfigured,
 } from "@/lib/hq/auth-server";
 import { getActiveHqProfile } from "@/lib/hq/supabase-admin";
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     if (!isHqAuthConfigured()) {
       return NextResponse.json(
         { error: "HQ access is not configured yet." },
-        { status: 503 },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
       );
     }
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     if (!email || password.length < 8) {
       return NextResponse.json(
         { error: "Enter a valid email and password." },
-        { status: 400 },
+        { status: 400, headers: { "Cache-Control": "no-store" } },
       );
     }
 
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     if (error || !data.user || data.user.email?.toLowerCase() !== email) {
       return NextResponse.json(
         { error: "Email or password is incorrect." },
-        { status: 401 },
+        { status: 401, headers: { "Cache-Control": "no-store" } },
       );
     }
 
@@ -61,14 +61,18 @@ export async function POST(request: Request) {
     if (!profile || profile.email !== email || !profile.isActive) {
       return NextResponse.json(
         { error: "This account does not have active HQ access." },
-        { status: 403 },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
       );
     }
 
-    const response = NextResponse.json({
-      ok: true,
-      redirectTo: destinationFor(request),
-    });
+    const response = NextResponse.json(
+      {
+        ok: true,
+        redirectTo: destinationFor(request),
+        sessionCheckUrl: "/api/hq/auth/session",
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
 
     response.cookies.set(
       HQ_SESSION_COOKIE,
@@ -78,13 +82,7 @@ export async function POST(request: Request) {
         fullName: profile.fullName,
         role: profile.role,
       }),
-      {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: hqSessionMaxAge,
-      },
+      hqSessionCookieOptions(request),
     );
 
     return response;
@@ -92,7 +90,7 @@ export async function POST(request: Request) {
     console.error("HQ login failed", error);
     return NextResponse.json(
       { error: "Unable to sign in right now." },
-      { status: 500 },
+      { status: 500, headers: { "Cache-Control": "no-store" } },
     );
   }
 }
