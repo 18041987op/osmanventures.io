@@ -140,6 +140,48 @@ export type AutoRxWeeklyReviewData = {
   review: WeeklyReviewRecord | null;
 };
 
+export type NinetyDayMilestone = {
+  id: string;
+  phase: 30 | 60 | 90;
+  category:
+    | "leadership"
+    | "financial"
+    | "operations"
+    | "people"
+    | "customer"
+    | "controls"
+    | "owner_independence";
+  objective: string;
+  successMeasure: string;
+  ownerRole: string;
+  dueDate: string | null;
+  status: "not_started" | "in_progress" | "blocked" | "complete";
+  evidence: string | null;
+  notes: string | null;
+  position: number;
+  updatedAt: string;
+};
+
+export type AutoRxNinetyDayPlan = {
+  plan: {
+    id: string;
+    title: string;
+    status: "draft" | "active" | "paused" | "completed";
+    startDate: string | null;
+    operatorUserId: string | null;
+    approvedAt: string | null;
+    updatedAt: string;
+  };
+  summary: {
+    total: number;
+    complete: number;
+    inProgress: number;
+    blocked: number;
+    readiness: number;
+  };
+  milestones: NinetyDayMilestone[];
+};
+
 async function callHqRpc<T>(
   functionName: string,
   parameters: Record<string, unknown>,
@@ -173,5 +215,13 @@ export function getAutoRxWeeklyReview(
   return callHqRpc<AutoRxWeeklyReviewData>("hq_get_autorx_weekly_review", {
     p_user_id: userId,
     p_week_start: weekStart,
+  });
+}
+
+export function getAutoRxNinetyDayPlan(
+  userId: string,
+): Promise<AutoRxNinetyDayPlan> {
+  return callHqRpc<AutoRxNinetyDayPlan>("hq_get_autorx_90_day_plan", {
+    p_user_id: userId,
   });
 }
