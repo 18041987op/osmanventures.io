@@ -68,6 +68,7 @@ export default async function HqPage() {
   const session = await requireHqSession();
   const dashboard = await getExecutiveDashboard(session.userId);
   const transitionPath = await hqAppPath("companies/autorx/transition");
+  const absencePath = await hqAppPath("companies/autorx/transition/absence-tests");
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
@@ -231,7 +232,8 @@ export default async function HqPage() {
                   </h2>
                   <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
                     The transition module now stores real gates, management seats,
-                    dependencies, actions, due dates, and audit history in Supabase B.
+                    dependencies, actions, due dates, audit history, and controlled
+                    owner-absence evidence in Supabase B.
                   </p>
 
                   <div className="mt-7 flex flex-wrap gap-3">
@@ -240,6 +242,12 @@ export default async function HqPage() {
                       className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400"
                     >
                       Open transition plan <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      href={absencePath}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-white/[0.06]"
+                    >
+                      Owner absence tests <ShieldCheck className="h-4 w-4" />
                     </Link>
                     <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-300">
                       {dashboard.autorx.metricsDefined} metrics defined
@@ -267,7 +275,7 @@ export default async function HqPage() {
                         style={{ width: `${dashboard.autorx.readiness}%` }}
                       />
                     </div>
-                    <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
+                    <div className="mt-5 grid gap-3 text-xs">
                       <div className="rounded-xl border border-white/8 bg-white/[0.025] p-3">
                         <p className="text-slate-600">Transition gates</p>
                         <p className="mt-1 font-medium text-amber-200">
@@ -278,6 +286,13 @@ export default async function HqPage() {
                         <p className="text-slate-600">Dependencies</p>
                         <p className="mt-1 font-medium text-indigo-200">
                           {dashboard.autorx.dependenciesStarted}/{dashboard.autorx.dependenciesTotal} started
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-white/8 bg-white/[0.025] p-3">
+                        <p className="text-slate-600">Owner absence tests</p>
+                        <p className="mt-1 font-medium text-emerald-200">
+                          {dashboard.autorx.absenceTestsPassed}/{dashboard.autorx.absenceTestsTotal} passed
+                          {dashboard.autorx.absenceTestsActive > 0 ? " · active now" : ""}
                         </p>
                       </div>
                     </div>
