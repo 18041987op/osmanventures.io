@@ -48,9 +48,11 @@ export function readHqSession(token: string | null | undefined): HqSession | nul
   if (!token || !secret || !token.includes(".")) return null;
 
   const [encoded, providedSignature] = token.split(".");
+  if (!encoded || !providedSignature) return null;
+
   const expectedSignature = sign(encoded, secret);
-  const provided = Buffer.from(providedSignature);
-  const expected = Buffer.from(expectedSignature);
+  const provided = Buffer.from(providedSignature, "utf8");
+  const expected = Buffer.from(expectedSignature, "utf8");
 
   if (provided.length !== expected.length) return null;
   if (!crypto.timingSafeEqual(provided, expected)) return null;
@@ -87,6 +89,24 @@ export async function requireHqSession(): Promise<HqSession> {
   const session = await currentHqSession();
   if (!session) redirect(await hqAppPath("login"));
   return session;
+}
+
+export function hqSessionCookieOptions(request: Request) {
+  const hostname = request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
+  const sharedDomain =
+    hostname === "osmanventures.io" || hostname.endsWith(".osmanventures.io")
+      ? ".osmanventures.io"
+      : undefined;
+
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: hqSessionMaxAge,
+    priority: "high" as const,
+    ...(sharedDomain ? { domain: sharedDomain } : {}),
+  };
 }
 
 export function isHqAuthConfigured(): boolean {
