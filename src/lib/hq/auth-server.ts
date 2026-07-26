@@ -75,35 +75,40 @@ export async function currentHqSession(): Promise<HqSession | null> {
   return readHqSession(cookieStore.get(HQ_SESSION_COOKIE)?.value);
 }
 
-async function hqLoginPath(): Promise<string> {
+export async function hqAppPath(pathname = ""): Promise<string> {
   const host = (await headers()).get("host")?.split(":")[0] ?? "";
+  const normalized = pathname ? `/${pathname.replace(/^\/+/, "")}` : "";
   return host === "hq.osmanventures.io" || host === "hq.localhost"
-    ? "/login"
-    : "/hq/login";
+    ? normalized || "/"
+    : `/hq${normalized}`;
 }
 
 export async function requireHqSession(): Promise<HqSession> {
   const session = await currentHqSession();
-  if (!session) redirect(await hqLoginPath());
+  if (!session) redirect(await hqAppPath("login"));
   return session;
-}
-
-export function allowedHqEmails(): Set<string> {
-  return new Set(
-    (process.env.HQ_ALLOWED_EMAILS ?? "")
-      .split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean),
-  );
 }
 
 export function isHqAuthConfigured(): boolean {
   return Boolean(
-    process.env.HQ_SUPABASE_URL &&
-      process.env.HQ_SUPABASE_ANON_KEY &&
-      process.env.HQ_SESSION_SECRET &&
-      allowedHqEmails().size,
+    process.env.HQ_SUPABASE_URL?.trim() &&
+      process.env.HQ_SUPABASE_ANON_KEY?.trim() &&
+      process.env.HQ_SUPABASE_SERVICE_ROLE_KEY?.trim() &&
+      process.env.HQ_SESSION_SECRET?.trim(),
   );
+}
+
+export function isHqBootstrapConfigured(): boolean {
+  return Boolean(isHqAuthConfigured() && process.env.HQ_BOOTSTRAP_CODE?.trim());
+}
+
+export function isValidHqBootstrapCode(candidate: string): boolean {
+  const configured = process.env.HQ_BOOTSTRAP_CODE?.trim();
+  if (!configured || !candidate) return false;
+
+  const actualHash = crypto.createHash("sha256").update(candidate).digest();
+  const expectedHash = crypto.createHash("sha256").update(configured).digest();
+  return crypto.timingSafeEqual(actualHash, expectedHash);
 }
 
 export const hqSessionMaxAge = SESSION_HOURS * 60 * 60;
