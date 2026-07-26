@@ -102,6 +102,44 @@ export type AutoRxTransitionData = {
   metrics: HqMetricDefinition[];
 };
 
+export type WeeklyMetricResult = {
+  id: string;
+  name: string;
+  definition: string;
+  unit: string;
+  sourceSystem: string | null;
+  direction: "higher_is_better" | "lower_is_better" | "range";
+  isOwnerControl: boolean;
+  target: number | null;
+  actual: number | null;
+  status: "on_track" | "watch" | "off_track" | "not_reported";
+  varianceExplanation: string | null;
+  correctiveAction: string | null;
+  actionDueDate: string | null;
+  updatedAt: string | null;
+};
+
+export type WeeklyReviewRecord = {
+  id: string;
+  status: "draft" | "submitted" | "reviewed" | "closed";
+  wins: string[];
+  misses: string[];
+  criticalIssues: string[];
+  decisionsTaken: string[];
+  decisionsRequired: string[];
+  nextCommitments: string[];
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  updatedAt: string;
+};
+
+export type AutoRxWeeklyReviewData = {
+  weekStart: string;
+  weekEnd: string;
+  metrics: WeeklyMetricResult[];
+  review: WeeklyReviewRecord | null;
+};
+
 async function callHqRpc<T>(
   functionName: string,
   parameters: Record<string, unknown>,
@@ -125,5 +163,15 @@ export function getExecutiveDashboard(userId: string): Promise<ExecutiveDashboar
 export function getAutoRxTransition(userId: string): Promise<AutoRxTransitionData> {
   return callHqRpc<AutoRxTransitionData>("hq_get_autorx_transition", {
     p_user_id: userId,
+  });
+}
+
+export function getAutoRxWeeklyReview(
+  userId: string,
+  weekStart: string,
+): Promise<AutoRxWeeklyReviewData> {
+  return callHqRpc<AutoRxWeeklyReviewData>("hq_get_autorx_weekly_review", {
+    p_user_id: userId,
+    p_week_start: weekStart,
   });
 }
