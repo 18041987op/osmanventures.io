@@ -1,327 +1,173 @@
--- Osman Ventures HQ authorization foundation.
--- Apply only after 20260725_hq_foundation.sql and after creating the first
--- authorized Supabase Auth user. Owner/profile bootstrap must be performed with
--- the service role; there is intentionally no public profile-registration path.
+-- Server-only access boundary for Osman Ventures HQ on Supabase B.
+-- The hq schema is intentionally not exposed directly to browser clients.
+-- These functions are callable only with the service_role key from trusted
+-- Next.js server routes.
 
-create or replace function public.hq_current_role()
-returns public.hq_role
+create or replace function public.ov_hq_login_profile(target_user_id uuid)
+returns table (
+  user_id uuid,
+  email text,
+  full_name text,
+  role text,
+  is_active boolean
+)
 language sql
 stable
 security definer
-set search_path = public
+set search_path = hq, auth, pg_catalog
 as $$
-  select role
-  from public.hq_profiles
-  where id = auth.uid() and is_active = true
+  select p.id, p.email, p.full_name, p.role::text, p.is_active
+  from hq.profiles p
+  where p.id = target_user_id
   limit 1;
 $$;
 
-create or replace function public.hq_is_group_leader()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select coalesce(public.hq_current_role() in ('owner', 'group_executive'), false);
-$$;
-
-create or replace function public.hq_has_company_access(target_company_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select
-    public.hq_is_group_leader()
-    or exists (
-      select 1
-      from public.hq_company_access access
-      join public.hq_profiles profile on profile.id = access.user_id
-      where access.user_id = auth.uid()
-        and access.company_id = target_company_id
-        and profile.is_active = true
-    );
-$$;
-
-create or replace function public.hq_can_manage_company(target_company_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select
-    public.hq_is_group_leader()
-    or exists (
-      select 1
-      from public.hq_company_access access
-      join public.hq_profiles profile on profile.id = access.user_id
-      where access.user_id = auth.uid()
-        and access.company_id = target_company_id
-        and access.role in ('company_operator', 'department_manager')
-        and profile.is_active = true
-    );
-$$;
-
-revoke all on function public.hq_current_role() from public;
-revoke all on function public.hq_is_group_leader() from public;
-revoke all on function public.hq_has_company_access(uuid) from public;
-revoke all on function public.hq_can_manage_company(uuid) from public;
-
-grant execute on function public.hq_current_role() to authenticated;
-grant execute on function public.hq_is_group_leader() to authenticated;
-grant execute on function public.hq_has_company_access(uuid) to authenticated;
-grant execute on function public.hq_can_manage_company(uuid) to authenticated;
-
--- Anonymous users receive no HQ table privileges.
-revoke all on public.hq_companies from anon;
-revoke all on public.hq_profiles from anon;
-revoke all on public.hq_company_access from anon;
-revoke all on public.hq_operator_seats from anon;
-revoke all on public.hq_metrics from anon;
-revoke all on public.hq_metric_results from anon;
-revoke all on public.hq_weekly_reviews from anon;
-revoke all on public.hq_capital_requests from anon;
-revoke all on public.hq_decisions from anon;
-revoke all on public.hq_risks from anon;
-revoke all on public.hq_dependencies from anon;
-revoke all on public.hq_audit_log from anon;
-
--- Authenticated users receive table privileges; RLS below determines scope.
-grant select, insert, update, delete on public.hq_companies to authenticated;
-grant select on public.hq_profiles to authenticated;
-grant select, insert, update, delete on public.hq_company_access to authenticated;
-grant select, insert, update, delete on public.hq_operator_seats to authenticated;
-grant select, insert, update, delete on public.hq_metrics to authenticated;
-grant select, insert, update on public.hq_metric_results to authenticated;
-grant select, insert, update on public.hq_weekly_reviews to authenticated;
-grant select, insert, update on public.hq_capital_requests to authenticated;
-grant select, insert, update on public.hq_decisions to authenticated;
-grant select, insert, update on public.hq_risks to authenticated;
-grant select, insert, update, delete on public.hq_dependencies to authenticated;
-grant select on public.hq_audit_log to authenticated;
-
--- Companies
-create policy hq_companies_select
-on public.hq_companies for select to authenticated
-using (public.hq_has_company_access(id));
-
-create policy hq_companies_owner_insert
-on public.hq_companies for insert to authenticated
-with check (public.hq_is_group_leader());
-
-create policy hq_companies_owner_update
-on public.hq_companies for update to authenticated
-using (public.hq_is_group_leader())
-with check (public.hq_is_group_leader());
-
-create policy hq_companies_owner_delete
-on public.hq_companies for delete to authenticated
-using (public.hq_is_group_leader());
-
--- Profiles are visible to the user and group leadership. Profile creation and
--- role changes are service-role operations only.
-create policy hq_profiles_select
-on public.hq_profiles for select to authenticated
-using (id = auth.uid() or public.hq_is_group_leader());
-
--- Company access assignments
-create policy hq_company_access_select
-on public.hq_company_access for select to authenticated
-using (user_id = auth.uid() or public.hq_is_group_leader());
-
-create policy hq_company_access_owner_insert
-on public.hq_company_access for insert to authenticated
-with check (public.hq_is_group_leader());
-
-create policy hq_company_access_owner_update
-on public.hq_company_access for update to authenticated
-using (public.hq_is_group_leader())
-with check (public.hq_is_group_leader());
-
-create policy hq_company_access_owner_delete
-on public.hq_company_access for delete to authenticated
-using (public.hq_is_group_leader());
-
--- Operator seats
-create policy hq_operator_seats_select
-on public.hq_operator_seats for select to authenticated
-using (public.hq_has_company_access(company_id));
-
-create policy hq_operator_seats_manage_insert
-on public.hq_operator_seats for insert to authenticated
-with check (public.hq_can_manage_company(company_id));
-
-create policy hq_operator_seats_manage_update
-on public.hq_operator_seats for update to authenticated
-using (public.hq_can_manage_company(company_id))
-with check (public.hq_can_manage_company(company_id));
-
-create policy hq_operator_seats_manage_delete
-on public.hq_operator_seats for delete to authenticated
-using (public.hq_is_group_leader());
-
--- Metrics and metric results
-create policy hq_metrics_select
-on public.hq_metrics for select to authenticated
-using (public.hq_has_company_access(company_id));
-
-create policy hq_metrics_manage_insert
-on public.hq_metrics for insert to authenticated
-with check (public.hq_can_manage_company(company_id));
-
-create policy hq_metrics_manage_update
-on public.hq_metrics for update to authenticated
-using (public.hq_can_manage_company(company_id))
-with check (public.hq_can_manage_company(company_id));
-
-create policy hq_metrics_manage_delete
-on public.hq_metrics for delete to authenticated
-using (public.hq_is_group_leader());
-
-create policy hq_metric_results_select
-on public.hq_metric_results for select to authenticated
-using (
-  public.hq_has_company_access(
-    (select metric.company_id from public.hq_metrics metric where metric.id = metric_id)
-  )
-);
-
-create policy hq_metric_results_manage_insert
-on public.hq_metric_results for insert to authenticated
-with check (
-  public.hq_can_manage_company(
-    (select metric.company_id from public.hq_metrics metric where metric.id = metric_id)
-  )
-);
-
-create policy hq_metric_results_manage_update
-on public.hq_metric_results for update to authenticated
-using (
-  public.hq_can_manage_company(
-    (select metric.company_id from public.hq_metrics metric where metric.id = metric_id)
-  )
+create or replace function public.ov_hq_bootstrap_owner(
+  target_user_id uuid,
+  target_email text,
+  target_full_name text
 )
-with check (
-  public.hq_can_manage_company(
-    (select metric.company_id from public.hq_metrics metric where metric.id = metric_id)
+returns void
+language plpgsql
+security definer
+set search_path = hq, auth, pg_catalog
+as $$
+begin
+  if not exists (select 1 from auth.users where id = target_user_id) then
+    raise exception 'Auth user does not exist';
+  end if;
+
+  if exists (
+    select 1 from hq.profiles
+    where role = 'owner'::hq.role and id <> target_user_id and is_active = true
+  ) then
+    raise exception 'An active HQ owner already exists';
+  end if;
+
+  insert into hq.profiles (id, email, full_name, role, is_active)
+  values (
+    target_user_id,
+    lower(trim(target_email)),
+    trim(target_full_name),
+    'owner'::hq.role,
+    true
   )
-);
+  on conflict (id) do update set
+    email = excluded.email,
+    full_name = excluded.full_name,
+    role = 'owner'::hq.role,
+    is_active = true,
+    updated_at = now();
 
--- Weekly business reviews
-create policy hq_weekly_reviews_select
-on public.hq_weekly_reviews for select to authenticated
-using (public.hq_has_company_access(company_id));
+  insert into hq.company_access (user_id, company_id, role)
+  select target_user_id, id, 'owner'::hq.role
+  from hq.companies
+  on conflict (user_id, company_id) do update set role = 'owner'::hq.role;
 
-create policy hq_weekly_reviews_operator_insert
-on public.hq_weekly_reviews for insert to authenticated
-with check (
-  operator_user_id = auth.uid()
-  and public.hq_can_manage_company(company_id)
-);
+  insert into hq.audit_log (
+    actor_user_id, action, entity_type, entity_id, new_values
+  ) values (
+    target_user_id,
+    'owner_bootstrapped',
+    'profile',
+    target_user_id::text,
+    jsonb_build_object('email', lower(trim(target_email)), 'role', 'owner')
+  );
+end;
+$$;
 
-create policy hq_weekly_reviews_operator_update
-on public.hq_weekly_reviews for update to authenticated
-using (operator_user_id = auth.uid() or public.hq_is_group_leader())
-with check (
-  (operator_user_id = auth.uid() and public.hq_can_manage_company(company_id))
-  or public.hq_is_group_leader()
-);
+create or replace function public.ov_hq_portfolio_snapshot()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = hq, pg_catalog
+as $$
+  select jsonb_build_object(
+    'companies', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', c.id,
+          'name', c.name,
+          'slug', c.slug,
+          'stage', c.stage::text,
+          'cashRole', c.cash_role,
+          'description', c.description,
+          'priority', c.owner_priority,
+          'operator', coalesce(s.title, 'Not assigned')
+        ) order by
+          case c.cash_role when 'cash_engine' then 1 when 'asset' then 2 else 3 end,
+          c.name
+      )
+      from hq.companies c
+      left join lateral (
+        select title
+        from hq.operator_seats os
+        where os.company_id = c.id and os.is_active = true
+        order by case when os.seat_type = 'company_operator' then 0 else 1 end, os.created_at
+        limit 1
+      ) s on true
+      where c.is_active = true
+    ), '[]'::jsonb),
+    'autorxMetrics', coalesce((
+      select jsonb_agg(
+        jsonb_build_object(
+          'id', m.id,
+          'name', m.name,
+          'definition', m.definition,
+          'unit', m.unit,
+          'sourceSystem', m.source_system,
+          'cadence', m.cadence,
+          'direction', m.direction,
+          'ownerControl', m.is_owner_control
+        ) order by m.is_owner_control desc, m.name
+      )
+      from hq.metrics m
+      join hq.companies c on c.id = m.company_id
+      where c.slug = 'autorx' and m.is_active = true
+    ), '[]'::jsonb),
+    'generatedAt', now()
+  );
+$$;
 
--- Capital requests
-create policy hq_capital_requests_select
-on public.hq_capital_requests for select to authenticated
-using (public.hq_has_company_access(company_id));
-
-create policy hq_capital_requests_requester_insert
-on public.hq_capital_requests for insert to authenticated
-with check (
-  requested_by = auth.uid()
-  and public.hq_has_company_access(company_id)
-);
-
-create policy hq_capital_requests_owner_update
-on public.hq_capital_requests for update to authenticated
-using (public.hq_is_group_leader())
-with check (public.hq_is_group_leader());
-
--- Decisions
-create policy hq_decisions_select
-on public.hq_decisions for select to authenticated
-using (
-  (company_id is null and public.hq_is_group_leader())
-  or (company_id is not null and public.hq_has_company_access(company_id))
-);
-
-create policy hq_decisions_owner_insert
-on public.hq_decisions for insert to authenticated
-with check (
-  owner_user_id = auth.uid()
-  and (
-    (company_id is null and public.hq_is_group_leader())
-    or (company_id is not null and public.hq_has_company_access(company_id))
-  )
-);
-
-create policy hq_decisions_owner_update
-on public.hq_decisions for update to authenticated
-using (owner_user_id = auth.uid() or public.hq_is_group_leader())
-with check (owner_user_id = auth.uid() or public.hq_is_group_leader());
-
--- Risks
-create policy hq_risks_select
-on public.hq_risks for select to authenticated
-using (
-  (company_id is null and public.hq_is_group_leader())
-  or (company_id is not null and public.hq_has_company_access(company_id))
-);
-
-create policy hq_risks_manage_insert
-on public.hq_risks for insert to authenticated
-with check (
-  (company_id is null and public.hq_is_group_leader())
-  or (company_id is not null and public.hq_can_manage_company(company_id))
-);
-
-create policy hq_risks_manage_update
-on public.hq_risks for update to authenticated
-using (
-  public.hq_is_group_leader()
-  or (company_id is not null and public.hq_can_manage_company(company_id))
+create or replace function public.ov_hq_record_audit(
+  target_actor uuid,
+  target_company uuid,
+  target_action text,
+  target_entity_type text,
+  target_entity_id text,
+  target_old_values jsonb default null,
+  target_new_values jsonb default null
 )
-with check (
-  public.hq_is_group_leader()
-  or (company_id is not null and public.hq_can_manage_company(company_id))
-);
+returns bigint
+language plpgsql
+security definer
+set search_path = hq, pg_catalog
+as $$
+declare
+  inserted_id bigint;
+begin
+  insert into hq.audit_log (
+    actor_user_id, company_id, action, entity_type, entity_id, old_values, new_values
+  ) values (
+    target_actor,
+    target_company,
+    target_action,
+    target_entity_type,
+    target_entity_id,
+    target_old_values,
+    target_new_values
+  ) returning id into inserted_id;
+  return inserted_id;
+end;
+$$;
 
--- Osman dependencies
-create policy hq_dependencies_select
-on public.hq_dependencies for select to authenticated
-using (public.hq_has_company_access(company_id));
+revoke all on function public.ov_hq_login_profile(uuid) from public, anon, authenticated;
+revoke all on function public.ov_hq_bootstrap_owner(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.ov_hq_portfolio_snapshot() from public, anon, authenticated;
+revoke all on function public.ov_hq_record_audit(uuid, uuid, text, text, text, jsonb, jsonb) from public, anon, authenticated;
 
-create policy hq_dependencies_manage_insert
-on public.hq_dependencies for insert to authenticated
-with check (public.hq_can_manage_company(company_id));
-
-create policy hq_dependencies_manage_update
-on public.hq_dependencies for update to authenticated
-using (public.hq_can_manage_company(company_id))
-with check (public.hq_can_manage_company(company_id));
-
-create policy hq_dependencies_owner_delete
-on public.hq_dependencies for delete to authenticated
-using (public.hq_is_group_leader());
-
--- Audit logs are immutable from the browser. They are written by trusted server
--- routes with the service role.
-create policy hq_audit_log_select
-on public.hq_audit_log for select to authenticated
-using (
-  public.hq_is_group_leader()
-  or (
-    public.hq_current_role() = 'auditor'
-    and (company_id is null or public.hq_has_company_access(company_id))
-  )
-);
+grant execute on function public.ov_hq_login_profile(uuid) to service_role;
+grant execute on function public.ov_hq_bootstrap_owner(uuid, text, text) to service_role;
+grant execute on function public.ov_hq_portfolio_snapshot() to service_role;
+grant execute on function public.ov_hq_record_audit(uuid, uuid, text, text, text, jsonb, jsonb) to service_role;
