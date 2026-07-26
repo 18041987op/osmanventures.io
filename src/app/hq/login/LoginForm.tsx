@@ -17,12 +17,15 @@ export default function LoginForm({ configured }: { configured: boolean }) {
     try {
       const response = await fetch("/api/hq/auth/login", {
         method: "POST",
+        credentials: "include",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
       const payload = (await response.json()) as {
         error?: string;
         redirectTo?: string;
+        sessionCheckUrl?: string;
       };
 
       if (!response.ok) {
@@ -30,7 +33,23 @@ export default function LoginForm({ configured }: { configured: boolean }) {
         return;
       }
 
-      window.location.assign(payload.redirectTo || "/hq");
+      const sessionResponse = await fetch(
+        payload.sessionCheckUrl || "/api/hq/auth/session",
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        },
+      );
+
+      if (!sessionResponse.ok) {
+        setError(
+          "Your email and password were accepted, but the browser did not retain the secure HQ session. Refresh the page and try again. If it continues, allow cookies for this site.",
+        );
+        return;
+      }
+
+      window.location.replace(payload.redirectTo || "/hq");
     } catch {
       setError("Unable to reach the secure login service.");
     } finally {
@@ -76,7 +95,10 @@ export default function LoginForm({ configured }: { configured: boolean }) {
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-200">
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm leading-6 text-rose-200"
+        >
           {error}
         </div>
       ) : null}
@@ -98,7 +120,7 @@ export default function LoginForm({ configured }: { configured: boolean }) {
         ) : (
           <LockKeyhole className="h-4 w-4" />
         )}
-        Enter command HQ
+        {submitting ? "Verifying secure session..." : "Enter command HQ"}
         {!submitting ? (
           <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
         ) : null}
