@@ -182,6 +182,68 @@ export type AutoRxNinetyDayPlan = {
   milestones: NinetyDayMilestone[];
 };
 
+export type AbsenceTestEvent = {
+  id: string;
+  eventKind:
+    | "owner_contact"
+    | "owner_intervention"
+    | "emergency_intervention"
+    | "critical_incident"
+    | "operating_exception"
+    | "evidence";
+  severity: "low" | "medium" | "high" | "critical";
+  title: string;
+  details: string | null;
+  businessImpact: string | null;
+  resolution: string | null;
+  causedFailure: boolean;
+  occurredAt: string;
+};
+
+export type AbsenceTestRun = {
+  id: string;
+  status: "scheduled" | "active" | "passed" | "failed" | "cancelled";
+  plannedStart: string;
+  plannedEnd: string;
+  actualStart: string | null;
+  actualEnd: string | null;
+  operatorUserId: string | null;
+  ownerInterventions: number;
+  emergencyInterventions: number;
+  baselineMetrics: Record<string, unknown>;
+  outcomeMetrics: Record<string, unknown>;
+  summary: string | null;
+  decision: string | null;
+  createdAt: string;
+  updatedAt: string;
+  events: AbsenceTestEvent[];
+};
+
+export type AbsenceTestTemplate = {
+  id: string;
+  durationDays: 1 | 3 | 7 | 14 | 30;
+  title: string;
+  objective: string;
+  ownerRules: string[];
+  passCriteria: string[];
+  failConditions: string[];
+  requiredEvidence: string[];
+  position: number;
+  latestRun: AbsenceTestRun | null;
+};
+
+export type AutoRxAbsenceTestsData = {
+  summary: {
+    total: number;
+    passed: number;
+    active: number;
+    scheduled: number;
+    failed: number;
+    readiness: number;
+  };
+  tests: AbsenceTestTemplate[];
+};
+
 async function callHqRpc<T>(
   functionName: string,
   parameters: Record<string, unknown>,
@@ -222,6 +284,14 @@ export function getAutoRxNinetyDayPlan(
   userId: string,
 ): Promise<AutoRxNinetyDayPlan> {
   return callHqRpc<AutoRxNinetyDayPlan>("hq_get_autorx_90_day_plan", {
+    p_user_id: userId,
+  });
+}
+
+export function getAutoRxAbsenceTests(
+  userId: string,
+): Promise<AutoRxAbsenceTestsData> {
+  return callHqRpc<AutoRxAbsenceTestsData>("hq_get_autorx_absence_tests", {
     p_user_id: userId,
   });
 }
