@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Building2, CalendarRange, Gauge } from "lucide-react";
+import {
+  BarChart3,
+  Building2,
+  CalendarRange,
+  Gauge,
+  ShieldCheck,
+} from "lucide-react";
 
 const items = [
   { key: "executive", label: "Executive", icon: Gauge },
   { key: "transition", label: "GM Transition", icon: Building2 },
   { key: "plan", label: "30/60/90", icon: CalendarRange },
+  { key: "absence", label: "Absence Tests", icon: ShieldCheck },
   { key: "review", label: "Weekly Review", icon: BarChart3 },
 ] as const;
 
