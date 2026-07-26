@@ -3,8 +3,10 @@ import { Building2, CircleDollarSign, ShieldCheck, Users } from "lucide-react";
 import Logo from "@/components/Logo";
 import {
   currentHqSession,
+  hqAppPath,
   isHqAuthConfigured,
 } from "@/lib/hq/auth-server";
+import { getHqBootstrapStatus } from "@/lib/hq/supabase-admin";
 import LoginForm from "./LoginForm";
 
 const principles = [
@@ -27,7 +29,10 @@ const principles = [
 
 export default async function HqLoginPage() {
   const session = await currentHqSession();
-  if (session) redirect("/hq");
+  if (session) redirect(await hqAppPath());
+
+  const bootstrapStatus = await getHqBootstrapStatus();
+  if (bootstrapStatus?.available) redirect(await hqAppPath("setup"));
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#070a11] text-slate-100">
