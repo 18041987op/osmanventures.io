@@ -8,6 +8,7 @@ export default async function AutoRxHqLayout({
     executive: await hqAppPath(),
     transition: await hqAppPath("companies/autorx/transition"),
     plan: await hqAppPath("companies/autorx/transition/plan-90"),
+    absence: await hqAppPath("companies/autorx/transition/absence-tests"),
     review: await hqAppPath("companies/autorx/review"),
   };
 
