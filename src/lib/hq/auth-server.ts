@@ -74,7 +74,31 @@ export function readHqSession(token: string | null | undefined): HqSession | nul
 
 export async function currentHqSession(): Promise<HqSession | null> {
   const cookieStore = await cookies();
-  return readHqSession(cookieStore.get(HQ_SESSION_COOKIE)?.value);
+  const signedSession = readHqSession(cookieStore.get(HQ_SESSION_COOKIE)?.value);
+  if (!signedSession) return null;
+
+  try {
+    const { getActiveHqProfile } = await import("./supabase-admin");
+    const profile = await getActiveHqProfile(signedSession.userId);
+
+    if (
+      !profile ||
+      !profile.isActive ||
+      profile.email.toLowerCase() !== signedSession.email.toLowerCase()
+    ) {
+      return null;
+    }
+
+    return {
+      ...signedSession,
+      email: profile.email,
+      fullName: profile.fullName,
+      role: profile.role,
+    };
+  } catch (error) {
+    console.error("Unable to validate HQ session access", error);
+    return null;
+  }
 }
 
 export async function hqAppPath(pathname = ""): Promise<string> {
