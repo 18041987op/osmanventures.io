@@ -1,19 +1,14 @@
-import {
-  companies,
-  firstMetrics,
-  ownerControls,
-  transitionSteps,
-} from "@/lib/hq/initial-data";
-import { requireHqSession } from "@/lib/hq/auth-server";
+import Link from "next/link";
 import Logo from "@/components/Logo";
+import { hqAppPath, requireHqSession } from "@/lib/hq/auth-server";
+import { getExecutiveDashboard } from "@/lib/hq/data-server";
 import {
   AlertTriangle,
   ArrowUpRight,
   BarChart3,
   Building2,
-  ChevronRight,
   CircleDollarSign,
-  ClipboardCheck,
+  Database,
   Gauge,
   Landmark,
   LogOut,
@@ -23,20 +18,6 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-
-const healthStyles = {
-  protected: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
-  transition: "border-amber-400/20 bg-amber-400/10 text-amber-200",
-  investment: "border-indigo-400/20 bg-indigo-400/10 text-indigo-200",
-  watch: "border-rose-400/20 bg-rose-400/10 text-rose-200",
-};
-
-const healthLabels = {
-  protected: "Protected",
-  transition: "Transition",
-  investment: "Investment",
-  watch: "Watch",
-};
 
 const navigation: Array<{ icon: LucideIcon; label: string; active?: boolean }> = [
   { icon: Gauge, label: "Executive", active: true },
@@ -48,51 +29,82 @@ const navigation: Array<{ icon: LucideIcon; label: string; active?: boolean }> =
   { icon: ShieldCheck, label: "Controls" },
 ];
 
-const commandCards = [
-  {
-    label: "Cash engines",
-    value: "1",
-    detail: "AutoRx currently funds the portfolio",
-    icon: Landmark,
-    accent: "text-emerald-300 bg-emerald-400/10 border-emerald-400/15",
-  },
-  {
-    label: "Operators installed",
-    value: "0",
-    detail: "Osman remains the operating bottleneck",
-    icon: Users,
-    accent: "text-amber-200 bg-amber-300/10 border-amber-300/15",
-  },
-  {
-    label: "Companies governed",
-    value: String(companies.length),
-    detail: "One accountability system across the group",
-    icon: Building2,
-    accent: "text-indigo-200 bg-indigo-400/10 border-indigo-400/15",
-  },
-  {
-    label: "Current mission",
-    value: "GM",
-    detail: "Build and transfer the AutoRx operator seat",
-    icon: Target,
-    accent: "text-cyan-200 bg-cyan-400/10 border-cyan-400/15",
-  },
+const ownerControls = [
+  "Bank balances, unusual transactions, and payment authority",
+  "Payroll changes, labor-cost trend, and final release",
+  "Warranty, refund, comeback, and reputation exposure",
+  "Capital transferred from AutoRx to outside ventures",
+  "Executive hiring, termination, compensation, and legal exposure",
 ];
 
 const weeklyPriorities = [
-  "Define the AutoRx general manager scorecard and authority limits.",
-  "Inventory every recurring decision and approval that still depends on Osman.",
-  "Protect a minimum AutoRx cash reserve before funding outside projects.",
+  "Complete the AutoRx GM seat, authority matrix, and scorecard definition.",
+  "Assign a next action and due date to every critical Osman dependency.",
+  "Define the minimum AutoRx cash reserve before outside capital transfers.",
 ];
+
+const stageLabels: Record<string, string> = {
+  project: "Project",
+  operating_unit: "Operating unit",
+  managed_company: "Managed company",
+  scalable_company: "Scalable company",
+  paused: "Paused",
+  closed: "Closed",
+};
+
+const cashRoleLabels = {
+  cash_engine: "Cash engine",
+  investment: "Investment",
+  asset: "Asset",
+};
+
+const cashRoleStyles = {
+  cash_engine: "border-emerald-400/20 bg-emerald-400/10 text-emerald-300",
+  investment: "border-indigo-400/20 bg-indigo-400/10 text-indigo-200",
+  asset: "border-cyan-400/20 bg-cyan-400/10 text-cyan-200",
+};
 
 export default async function HqPage() {
   const session = await requireHqSession();
+  const dashboard = await getExecutiveDashboard(session.userId);
+  const transitionPath = await hqAppPath("companies/autorx/transition");
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
   }).format(new Date());
+
+  const commandCards = [
+    {
+      label: "Cash engines",
+      value: String(dashboard.summary.cashEngines),
+      detail: "AutoRx is currently the protected portfolio cash source",
+      icon: Landmark,
+      accent: "text-emerald-300 bg-emerald-400/10 border-emerald-400/15",
+    },
+    {
+      label: "Operators installed",
+      value: String(dashboard.summary.operatorsInstalled),
+      detail: "A company operator counts only after an incumbent is assigned",
+      icon: Users,
+      accent: "text-amber-200 bg-amber-300/10 border-amber-300/15",
+    },
+    {
+      label: "Companies governed",
+      value: String(dashboard.summary.companiesGoverned),
+      detail: "Active companies registered in the HQ governance layer",
+      icon: Building2,
+      accent: "text-indigo-200 bg-indigo-400/10 border-indigo-400/15",
+    },
+    {
+      label: "Critical dependencies",
+      value: String(dashboard.summary.openCriticalDependencies),
+      detail: "Critical AutoRx dependencies not yet tested without Osman",
+      icon: AlertTriangle,
+      accent: "text-rose-200 bg-rose-400/10 border-rose-400/15",
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-[#070a11] text-slate-100">
@@ -113,7 +125,7 @@ export default async function HqPage() {
               {navigation.map(({ icon: Icon, label, active }) => (
                 <div
                   key={label}
-                  className={`flex items-center justify-between rounded-xl px-3.5 py-3 text-sm transition ${
+                  className={`flex items-center justify-between rounded-xl px-3.5 py-3 text-sm ${
                     active
                       ? "border border-indigo-400/15 bg-indigo-500/12 text-indigo-100"
                       : "border border-transparent text-slate-500"
@@ -141,8 +153,8 @@ export default async function HqPage() {
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-slate-400">
-                  No outside project receives capital without a budget, owner,
-                  milestone, stop condition, and review date.
+                  No outside project receives capital without a budget, accountable
+                  owner, milestone, stop condition, and review date.
                 </p>
               </div>
 
@@ -152,7 +164,7 @@ export default async function HqPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{session.fullName}</p>
-                  <p className="truncate text-xs text-slate-600">Owner</p>
+                  <p className="truncate text-xs text-slate-600">{session.role}</p>
                 </div>
                 <form action="/api/hq/auth/logout" method="post">
                   <button
@@ -178,7 +190,7 @@ export default async function HqPage() {
                   Executive command center
                 </p>
                 <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                  Good morning, {session.fullName.split(" ")[0]}.
+                  Good day, {session.fullName.split(" ")[0]}.
                 </h1>
                 <p className="mt-1 text-sm text-slate-500">{today}</p>
               </div>
@@ -189,8 +201,7 @@ export default async function HqPage() {
                     System status
                   </p>
                   <div className="mt-1 flex items-center gap-2 text-sm text-emerald-200">
-                    <span className="h-2 w-2 rounded-full bg-emerald-300" />
-                    Private session active
+                    <Database className="h-3.5 w-3.5" /> Live data from B
                   </div>
                 </div>
                 <form action="/api/hq/auth/logout" method="post" className="lg:hidden">
@@ -219,18 +230,21 @@ export default async function HqPage() {
                     finances everything else.
                   </h2>
                   <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
-                    The HQ exists first to protect AutoRx cash flow, install an
-                    accountable operator, and preserve direct owner visibility over
-                    money, people, quality, and risk.
+                    The transition module now stores real gates, management seats,
+                    dependencies, actions, due dates, and audit history in Supabase B.
                   </p>
 
                   <div className="mt-7 flex flex-wrap gap-3">
-                    <button className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white">
-                      Open transition plan <ChevronRight className="h-4 w-4" />
-                    </button>
-                    <button className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-300">
-                      Review owner controls <ShieldCheck className="h-4 w-4" />
-                    </button>
+                    <Link
+                      href={transitionPath}
+                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400"
+                    >
+                      Open transition plan <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                    <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-300">
+                      {dashboard.autorx.metricsDefined} metrics defined
+                      <BarChart3 className="h-4 w-4" />
+                    </div>
                   </div>
                 </div>
 
@@ -241,21 +255,30 @@ export default async function HqPage() {
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
                           Transition readiness
                         </p>
-                        <p className="mt-2 text-5xl font-semibold tracking-tight">12%</p>
+                        <p className="mt-2 text-5xl font-semibold tracking-tight">
+                          {dashboard.autorx.readiness}%
+                        </p>
                       </div>
                       <BarChart3 className="h-8 w-8 text-indigo-300" />
                     </div>
                     <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/5">
-                      <div className="h-full w-[12%] rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400" />
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400"
+                        style={{ width: `${dashboard.autorx.readiness}%` }}
+                      />
                     </div>
                     <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
                       <div className="rounded-xl border border-white/8 bg-white/[0.025] p-3">
-                        <p className="text-slate-600">Seat defined</p>
-                        <p className="mt-1 font-medium text-amber-200">In progress</p>
+                        <p className="text-slate-600">Transition gates</p>
+                        <p className="mt-1 font-medium text-amber-200">
+                          {dashboard.autorx.gatesComplete}/{dashboard.autorx.gatesTotal} complete
+                        </p>
                       </div>
                       <div className="rounded-xl border border-white/8 bg-white/[0.025] p-3">
-                        <p className="text-slate-600">Operator installed</p>
-                        <p className="mt-1 font-medium text-slate-400">Not started</p>
+                        <p className="text-slate-600">Dependencies</p>
+                        <p className="mt-1 font-medium text-indigo-200">
+                          {dashboard.autorx.dependenciesStarted}/{dashboard.autorx.dependenciesTotal} started
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -265,10 +288,7 @@ export default async function HqPage() {
 
             <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {commandCards.map(({ label, value, detail, icon: Icon, accent }) => (
-                <article
-                  key={label}
-                  className="rounded-2xl border border-white/8 bg-[#0c111b] p-5"
-                >
+                <article key={label} className="rounded-2xl border border-white/8 bg-[#0c111b] p-5">
                   <div className="flex items-start justify-between gap-4">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
                       {label}
@@ -288,69 +308,43 @@ export default async function HqPage() {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                      Portfolio command
+                      Portfolio
                     </p>
                     <h2 className="mt-1 text-xl font-semibold">Companies under governance</h2>
                   </div>
-                  <button className="hidden items-center gap-2 text-xs font-medium text-indigo-300 sm:inline-flex">
-                    Portfolio view <ArrowUpRight className="h-4 w-4" />
-                  </button>
+                  <Building2 className="h-5 w-5 text-indigo-300" />
                 </div>
 
-                <div className="mt-5 overflow-hidden rounded-2xl border border-white/8">
-                  <div className="hidden grid-cols-[1.15fr_.8fr_.55fr] gap-4 bg-white/[0.025] px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 md:grid">
-                    <span>Company and operator</span>
-                    <span>Owner priority</span>
-                    <span>Status</span>
-                  </div>
-                  {companies.map((company) => (
-                    <article
-                      key={company.name}
-                      className="grid gap-4 border-t border-white/8 px-4 py-4 first:border-t-0 md:grid-cols-[1.15fr_.8fr_.55fr] md:items-center"
-                    >
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-sm font-semibold">{company.name}</h3>
-                          <span className="rounded-full border border-white/8 px-2 py-0.5 text-[9px] uppercase tracking-[0.1em] text-slate-500">
-                            {company.cashRole}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-600">
-                          {company.category} · {company.operator}
-                        </p>
-                      </div>
-                      <p className="text-xs leading-5 text-slate-400">{company.priority}</p>
-                      <div className="flex items-center justify-between gap-3 md:justify-start">
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {dashboard.companies.map((company) => (
+                    <article key={company.id} className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-sm font-medium">{company.name}</h3>
                         <span
-                          className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${healthStyles[company.health]}`}
+                          className={`rounded-full border px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] ${cashRoleStyles[company.cashRole]}`}
                         >
-                          {healthLabels[company.health]}
+                          {cashRoleLabels[company.cashRole]}
                         </span>
-                        <ChevronRight className="h-4 w-4 text-slate-700" />
                       </div>
+                      <p className="mt-2 text-xs text-slate-600">
+                        {stageLabels[company.stage] || company.stage}
+                      </p>
+                      <p className="mt-3 text-xs leading-5 text-slate-400">
+                        {company.ownerPriority || company.description}
+                      </p>
                     </article>
                   ))}
                 </div>
               </section>
 
               <section className="rounded-[1.75rem] border border-white/8 bg-[#0c111b] p-5 sm:p-6">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-xl border border-indigo-300/15 bg-indigo-400/10 p-2.5 text-indigo-200">
-                    <ClipboardCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                      This week
-                    </p>
-                    <h2 className="mt-0.5 text-lg font-semibold">Owner priorities</h2>
-                  </div>
-                </div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
+                  This week
+                </p>
+                <h2 className="mt-1 text-xl font-semibold">Owner priorities</h2>
                 <div className="mt-5 space-y-3">
                   {weeklyPriorities.map((priority, index) => (
-                    <div
-                      key={priority}
-                      className="flex gap-3 rounded-xl border border-white/8 bg-white/[0.02] p-3.5"
-                    >
+                    <div key={priority} className="flex gap-3 rounded-xl border border-white/8 bg-white/[0.02] p-3.5">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-indigo-400/10 text-[10px] font-semibold text-indigo-200">
                         {index + 1}
                       </span>
@@ -361,97 +355,23 @@ export default async function HqPage() {
               </section>
             </div>
 
-            <div className="mt-5 grid gap-5 xl:grid-cols-2">
-              <section className="rounded-[1.75rem] border border-white/8 bg-[#0c111b] p-5 sm:p-6">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                  Execution path
-                </p>
-                <h2 className="mt-1 text-xl font-semibold">AutoRx GM transition</h2>
-                <div className="mt-5 space-y-1">
-                  {transitionSteps.map((step, index) => (
-                    <div key={step.title} className="relative flex gap-4 pb-5 last:pb-0">
-                      {index < transitionSteps.length - 1 ? (
-                        <div className="absolute left-[15px] top-8 h-[calc(100%-1rem)] w-px bg-white/8" />
-                      ) : null}
-                      <div
-                        className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
-                          step.status === "now"
-                            ? "border-indigo-300/30 bg-indigo-400/15 text-indigo-200"
-                            : "border-white/10 bg-[#0c111b] text-slate-600"
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-sm font-medium">{step.title}</h3>
-                          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-600">
-                            {step.status}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-xs leading-5 text-slate-500">
-                          {step.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <section className="rounded-[1.75rem] border border-white/8 bg-[#0c111b] p-5 sm:p-6">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                      Owner scorecard
-                    </p>
-                    <h2 className="mt-1 text-xl font-semibold">Metrics awaiting verified data</h2>
-                  </div>
-                  <span className="rounded-full border border-slate-400/10 bg-white/[0.025] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-600">
-                    Not connected
-                  </span>
-                </div>
-                <p className="mt-3 text-xs leading-5 text-slate-500">
-                  Definitions and sources must be approved before figures appear here.
-                  The HQ will not manufacture performance numbers.
-                </p>
-                <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
-                  {firstMetrics.map((metric) => (
-                    <div
-                      key={metric}
-                      className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-3 text-xs text-slate-400"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-slate-700" />
-                      {metric}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </div>
-
             <section className="mt-5 rounded-[1.75rem] border border-amber-300/15 bg-amber-300/[0.035] p-5 sm:p-6">
-              <div className="grid gap-6 xl:grid-cols-[.45fr_1fr]">
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 text-amber-200" />
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-200/60">
-                    Non-negotiable
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200/70">
+                    Owner-retained controls
                   </p>
-                  <h2 className="mt-1 text-xl font-semibold">Delegation is not blindness.</h2>
-                  <p className="mt-3 text-xs leading-6 text-slate-500">
-                    Osman must stop operating normal transactions while retaining
-                    direct visibility over the controls capable of damaging the
-                    company.
-                  </p>
+                  <h2 className="mt-1 text-xl font-semibold">Delegation without loss of control</h2>
                 </div>
-                <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-                  {ownerControls.map((control) => (
-                    <div
-                      key={control}
-                      className="flex gap-3 rounded-xl border border-amber-300/10 bg-black/10 p-3.5 text-xs leading-5 text-slate-400"
-                    >
-                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-200" />
-                      <span>{control}</span>
-                    </div>
-                  ))}
-                </div>
+              </div>
+              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {ownerControls.map((control) => (
+                  <div key={control} className="flex gap-3 rounded-xl border border-amber-300/10 bg-black/10 p-4">
+                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-200" />
+                    <p className="text-xs leading-5 text-slate-400">{control}</p>
+                  </div>
+                ))}
               </div>
             </section>
           </section>
