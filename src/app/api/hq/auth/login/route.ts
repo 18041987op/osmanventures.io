@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
-  HQ_SESSION_COOKIE,
-  allowedHqEmails,
   createHqSession,
+  HQ_SESSION_COOKIE,
   hqSessionMaxAge,
   isHqAuthConfigured,
 } from "@/lib/hq/auth-server";
+import { getActiveHqProfile } from "@/lib/hq/supabase-admin";
 
 function destinationFor(request: Request): string {
   const host = request.headers.get("host")?.split(":")[0] ?? "";
@@ -30,13 +30,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Enter a valid email and password." },
         { status: 400 },
-      );
-    }
-
-    if (!allowedHqEmails().has(email)) {
-      return NextResponse.json(
-        { error: "This account is not authorized for Osman Ventures HQ." },
-        { status: 403 },
       );
     }
 
@@ -64,9 +57,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const fullName =
-      (data.user.user_metadata?.full_name as string | undefined)?.trim() ||
-      email.split("@")[0];
+    const profile = await getActiveHqProfile(data.user.id);
+    if (!profile || profile.email !== email || !profile.isActive) {
+      return NextResponse.json(
+        { error: "This account does not have active HQ access." },
+        { status: 403 },
+      );
+    }
 
     const response = NextResponse.json({
       ok: true,
@@ -76,10 +73,10 @@ export async function POST(request: Request) {
     response.cookies.set(
       HQ_SESSION_COOKIE,
       createHqSession({
-        userId: data.user.id,
-        email,
-        fullName,
-        role: "owner",
+        userId: profile.userId,
+        email: profile.email,
+        fullName: profile.fullName,
+        role: profile.role,
       }),
       {
         httpOnly: true,
