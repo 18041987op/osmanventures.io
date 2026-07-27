@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, DatabaseZap, Gauge, Landmark, Users } from "lucide-react";
+import { Building2, DatabaseZap, Gauge, Landmark, ListChecks, Users } from "lucide-react";
 import { currentHqSession, hqAppPath } from "@/lib/hq/auth-server";
 
 export default async function HqLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -9,6 +9,7 @@ export default async function HqLayout({ children }: Readonly<{ children: React.
 
   const links = [
     { href: await hqAppPath(), label: "Executive", icon: Gauge, tone: "text-slate-400 hover:text-white" },
+    ...(session.role === "owner" ? [{ href: await hqAppPath("actions"), label: "Actions", icon: ListChecks, tone: "text-amber-200 bg-amber-400/10" }] : []),
     { href: await hqAppPath("companies"), label: "Companies", icon: Building2, tone: "text-violet-200 bg-violet-400/10" },
     { href: await hqAppPath("operators"), label: "Operators", icon: Users, tone: "text-indigo-200 bg-indigo-400/10" },
     { href: await hqAppPath("governance"), label: "Governance", icon: Landmark, tone: "text-emerald-200 bg-emerald-400/10" },
