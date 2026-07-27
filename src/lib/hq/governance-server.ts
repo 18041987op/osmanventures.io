@@ -29,6 +29,31 @@ export type ReservePolicy = {
   updatedAt: string;
 };
 
+export type CashPosition = {
+  id: string;
+  companyId: string;
+  snapshotDate: string;
+  source: string;
+  liquidBankCash: number;
+  excludedBookCash: number;
+  creditCardDebt: number;
+  netOperatingLiquidity: number;
+  payrollPending: number;
+  partsVendor30d: number;
+  taxes30d: number;
+  rentDebt30d: number;
+  otherObligations30d: number;
+  restrictedCash: number;
+  totalKnownCommitments: number;
+  projectedAfterCommitments: number;
+  requiredReserve: number;
+  hardFloor: number;
+  reserveGap: number;
+  operatingBand: "emergency" | "stabilization" | "reserve_compliant" | "capital_review";
+  details: Record<string, unknown>;
+  updatedAt: string;
+};
+
 export type CapitalRequest = {
   id: string;
   companyId: string;
@@ -118,6 +143,7 @@ export type GovernanceControl = {
 export type GovernanceCenterData = {
   companies: GovernanceCompany[];
   reservePolicy: ReservePolicy;
+  cashPosition: CashPosition | null;
   capitalRequests: CapitalRequest[];
   decisions: GovernanceDecision[];
   risks: GovernanceRisk[];

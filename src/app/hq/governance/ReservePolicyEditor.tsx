@@ -2,7 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Banknote, LoaderCircle, Save, ShieldCheck } from "lucide-react";
+import { Banknote, LoaderCircle, RefreshCw, Save, ShieldCheck } from "lucide-react";
 import type { ReservePolicy } from "@/lib/hq/governance-server";
 
 async function governanceAction(payload: Record<string, unknown>) {
@@ -27,7 +27,6 @@ function money(value: number | null) {
 export default function ReservePolicyEditor({ policy }: { policy: ReservePolicy }) {
   const router = useRouter();
   const [form, setForm] = useState({
-    currentCash: policy.currentCash?.toString() ?? "",
     payrollBuffer: policy.payrollBuffer.toString(),
     vendorBuffer: policy.vendorBuffer.toString(),
     taxBuffer: policy.taxBuffer.toString(),
@@ -53,7 +52,7 @@ export default function ReservePolicyEditor({ policy }: { policy: ReservePolicy 
       ].reduce((sum, value) => sum + (Number(value) || 0), 0),
     [form],
   );
-  const currentCash = form.currentCash === "" ? null : Number(form.currentCash) || 0;
+  const currentCash = policy.currentCash;
   const available = currentCash === null ? null : Math.max(currentCash - requiredReserve, 0);
   const gap = currentCash === null ? null : Math.max(requiredReserve - currentCash, 0);
 
@@ -82,7 +81,6 @@ export default function ReservePolicyEditor({ policy }: { policy: ReservePolicy 
   }
 
   const moneyFields: Array<[keyof typeof form, string, string]> = [
-    ["currentCash", "Verified current cash", "Current unrestricted cash available to AutoRx"],
     ["payrollBuffer", "Payroll buffer", "Payroll, taxes, and near-term labor commitments"],
     ["vendorBuffer", "Vendor and parts buffer", "Parts, vendors, refunds, and committed payables"],
     ["taxBuffer", "Tax buffer", "Known sales, payroll, income, and other tax obligations"],
@@ -109,8 +107,9 @@ export default function ReservePolicyEditor({ policy }: { policy: ReservePolicy 
         </span>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
+          ["Verified current cash", money(currentCash)],
           ["Required reserve", money(requiredReserve)],
           ["Available capital", money(available)],
           ["Reserve gap", money(gap)],
@@ -120,6 +119,13 @@ export default function ReservePolicyEditor({ policy }: { policy: ReservePolicy 
             <p className="mt-2 text-xl font-semibold">{value}</p>
           </div>
         ))}
+      </div>
+
+      <div className="mt-4 flex items-start gap-3 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.05] px-4 py-3">
+        <RefreshCw className="mt-0.5 h-4 w-4 shrink-0 text-cyan-200" />
+        <p className="text-xs leading-5 text-slate-400">
+          Verified current cash is synchronized from RunTech and QuickBooks. Editing this policy changes the protected reserve components, not the live bank balance.
+        </p>
       </div>
 
       <form onSubmit={submit} className="mt-6">
@@ -152,7 +158,7 @@ export default function ReservePolicyEditor({ policy }: { policy: ReservePolicy 
               onChange={(event) => field("notes", event.target.value)}
               rows={4}
               className="mt-2 w-full rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-emerald-300/40"
-              placeholder="Explain where the cash figure and reserve components came from."
+              placeholder="Explain the reserve components and operating rules."
             />
           </label>
           <label>
@@ -167,7 +173,7 @@ export default function ReservePolicyEditor({ policy }: { policy: ReservePolicy 
               <option value="paused">Paused</option>
             </select>
             <p className="mt-2 text-xs leading-5 text-slate-600">
-              Approval requires verified cash and a positive reserve.
+              Approval requires synchronized cash and a positive reserve.
             </p>
           </label>
         </div>
