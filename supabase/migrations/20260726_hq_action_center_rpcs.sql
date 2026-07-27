@@ -108,11 +108,15 @@ begin
   if not hq.is_active_owner(p_actor_user_id) then raise exception 'Active HQ owner access required'; end if;
   if p_status not in ('open','in_progress','blocked','done','cancelled') then raise exception 'Invalid action status'; end if;
   if p_priority not in ('critical','high','medium','low') then raise exception 'Invalid action priority'; end if;
+  if p_status='blocked' and nullif(trim(coalesce(p_blocker,'')),'') is null then raise exception 'A blocker explanation is required'; end if;
 
   select * into old_item from hq.action_items where id=p_action_id for update;
   if old_item.id is null then raise exception 'Action item not found'; end if;
   if old_item.system_key is not null and p_status in ('done','cancelled') then
     raise exception 'System actions close automatically when the underlying condition is resolved';
+  end if;
+  if old_item.system_key is not null and p_priority<>old_item.priority then
+    raise exception 'System action priority is controlled by the linked HQ condition';
   end if;
 
   update hq.action_items set
