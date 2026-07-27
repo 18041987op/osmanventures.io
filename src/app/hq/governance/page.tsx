@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { hqAppPath, requireHqSession } from "@/lib/hq/auth-server";
 import { getGovernanceCenter } from "@/lib/hq/governance-server";
+import CashPositionPanel from "./CashPositionPanel";
 import ReservePolicyEditor from "./ReservePolicyEditor";
 import CapitalRequestsPanel from "./CapitalRequestsPanel";
 import DecisionRegister from "./DecisionRegister";
@@ -67,12 +68,13 @@ export default async function GovernanceCenterPage() {
           </div>
           <div className="rounded-xl border border-emerald-300/15 bg-emerald-300/[0.05] px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200/60">Data source</p>
-            <p className="mt-1 flex items-center gap-2 text-sm font-medium text-emerald-100"><Database className="h-4 w-4" /> Supabase B · hq schema</p>
+            <p className="mt-1 flex items-center gap-2 text-sm font-medium text-emerald-100"><Database className="h-4 w-4" /> Supabase B · RunTech · QuickBooks</p>
           </div>
         </header>
 
         <nav className="mt-5 flex gap-2 overflow-x-auto rounded-2xl border border-white/8 bg-[#0c111b] p-2">
           {[
+            ["#cash-position", "Cash position"],
             ["#reserve", "Reserve policy"],
             ["#capital", "Capital requests"],
             ["#decisions", "Decisions"],
@@ -97,6 +99,7 @@ export default async function GovernanceCenterPage() {
         </div>
 
         <div className="mt-5 space-y-5">
+          <CashPositionPanel position={data.cashPosition} />
           <ReservePolicyEditor policy={data.reservePolicy} />
           <CapitalRequestsPanel requests={data.capitalRequests} companies={data.companies} reservePolicy={data.reservePolicy} />
           <DecisionRegister decisions={data.decisions} companies={data.companies} />
