@@ -18,6 +18,7 @@ declare
   no_absence_progress boolean;
   reserve_incomplete boolean;
   source_status text;
+  absence_system_blocker constant text := 'A designated acting operator or General Manager is required before the test can be meaningful.';
 begin
   if not hq.is_active_owner(p_actor_user_id) then
     raise exception 'Active HQ owner access required';
@@ -93,8 +94,16 @@ begin
     'transition','high','absence_tests',autorx_id::text,'/companies/autorx/transition/absence-tests',
     'Scheduled test with baseline, operator, owner boundaries, test dates, and written pass/fail criteria.',
     'Osman',case when gm_vacant then 'blocked' else 'open' end,
-    case when gm_vacant then 'A designated acting operator or General Manager is required before the test can be meaningful.' else null end
+    case when gm_vacant then absence_system_blocker else null end
   );
+
+  if no_absence_progress then
+    update hq.action_items set
+      status=case when gm_vacant then 'blocked' when status='blocked' and blocker=absence_system_blocker then 'open' else status end,
+      blocker=case when gm_vacant then absence_system_blocker when blocker=absence_system_blocker then null else blocker end,
+      updated_at=now()
+    where system_key='autorx.first_absence_test' and status not in ('done','cancelled');
+  end if;
 
   perform hq.set_system_action(
     missing_milestone_owners>0,'portfolio.milestone_owners',null,
